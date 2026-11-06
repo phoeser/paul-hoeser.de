@@ -81,11 +81,11 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
 .book p{color:var(--muted);font-size:16px}
 .book .links{margin-top:14px;font-size:15px;display:flex;flex-wrap:wrap;gap:6px 18px}
 .book .links a{font-weight:500}
-.hp{margin-top:22px;padding:16px 18px;background:var(--card);border-radius:10px}
-.hp .t{font-size:14px;color:var(--faint);margin-bottom:10px}
-.hp figure{margin:0 0 12px}
-.hp figure:last-child{margin-bottom:0}
-.hp figcaption{font-size:15px;font-weight:500;margin-bottom:6px}
+.hp{margin-top:22px;padding:16px 18px;background:var(--card);border-radius:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px}
+.hp .t{font-size:14px;color:var(--faint);grid-column:1/-1;margin-bottom:-4px}
+.hp figure{margin:0;min-width:0}
+.hp figure{display:flex;flex-direction:column;justify-content:space-between}
+.hp figcaption{font-size:15px;font-weight:500;margin-bottom:6px;line-height:1.35}
 .hp audio{width:100%;height:40px}
 .group>*,.p,.book>*{min-width:0}
 .thumb{display:block;position:relative;aspect-ratio:3/2;margin-bottom:16px;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--hair)}
@@ -103,6 +103,7 @@ a.thumb:hover img{transform:scale(1.03)}
 @media (prefers-reduced-motion:reduce){.thumb img{transition:none} a.thumb:hover img{transform:none}}
 @media (max-width:820px){
  .book{grid-template-columns:1fr} .book img{max-width:200px}
+ .hp{grid-template-columns:minmax(0,1fr)}
  .sec-head,.group,.cv li,.about{grid-template-columns:minmax(0,1fr);gap:8px}
  .projects{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -126,10 +127,10 @@ a.thumb:hover img{transform:scale(1.03)}
  <p>Marketing-Manager, Builder, Podcaster aus München. Seit 2026 setze ich meine Ideen mit KI um, ohne selbst zu programmieren: Wissensplattformen, Podcasts, Musik und Werkzeuge für den Alltag.</p>
  <div class="stats">
   <div class="stat"><b>1</b><span>Buch mit Hörbuch</span></div>
-  <div class="stat"><b>200+</b><span>bewertete Wirkstoffe</span></div>
-  <div class="stat"><b>100+</b><span>Podcastfolgen</span></div>
-  <div class="stat"><b>9</b><span>KI-Musikalben</span></div>
-  <div class="stat"><b>1</b><span>MCP-Server mit ChatGPT-App</span></div>
+  <div class="stat"><b>500+</b><span>bewertete Wirkstoffe und Methoden</span></div>
+  <div class="stat"><b>150+</b><span>Podcastfolgen in fünf Shows</span></div>
+  <div class="stat"><b>12</b><span>KI-Musikalben</span></div>
+  <div class="stat"><b>2</b><span>MCP-Server</span></div>
  </div>
 </div>
 
@@ -166,21 +167,15 @@ a.thumb:hover img{transform:scale(1.03)}
     <a class="thumb" href="https://biohackingkompakt.de" target="_blank" rel="noopener"><img src="img/shot-biohacking-kompakt.jpg" alt="Startseite von biohackingkompakt.de" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Website</span><span class="badge live">live</span></div>
     <h3>Biohacking Kompakt</h3>
-    <p>Unabhängige Wissensdatenbank zu Supplements, Peptiden und Longevity. Über 200 Einträge, jeder bewertet mit dem eigenen BK-Score auf fünf Achsen. Leitsatz: Wissenschaft statt Hype.</p>
+    <p>Unabhängige Wissensdatenbank zu Supplements, Peptiden und Longevity. Über 500 Einträge, jeder bewertet mit dem eigenen BK-Score auf fünf Achsen. Leitsatz: Wissenschaft statt Hype.</p>
     <div class="links"><a href="https://biohackingkompakt.de" target="_blank" rel="noopener">biohackingkompakt.de ↗</a></div>
    </article>
    <article class="p">
     <a class="thumb cover" href="https://open.spotify.com/show/033JO82L47Sg4YSmPYas0z" target="_blank" rel="noopener"><img src="img/cover-bk-podcast.jpg" alt="Cover des Podcasts Biohacking Kompakt" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Podcast</span><span class="badge live">live</span></div>
     <h3>Biohacking Kompakt, der Podcast</h3>
-    <p>Kurze Folgen zu je einem Wirkstoff oder Thema, als Dialog der KI-Stimmen Paul und Paula: einer neugierig, eine streng. Rund zwölf Minuten pro Folge.</p>
-    <div class="links"><a href="https://open.spotify.com/show/033JO82L47Sg4YSmPYas0z" target="_blank" rel="noopener">Spotify ↗</a><a href="https://podcasts.apple.com/de/podcast/id6804214652" target="_blank" rel="noopener">Apple Podcasts ↗</a></div>
-   </article>
-   <article class="p">
-    <div class="thumb cover"><img src="img/cover-bk-english.jpg" alt="Cover von Biohacking Kompakt, English Edition" loading="lazy" decoding="async"></div>
-    <div class="meta"><span>Podcast</span><span class="badge live">neu</span></div>
-    <h3>Biohacking Kompakt, English Edition</h3>
-    <p>Die englische Ausgabe als eigene Show, gestartet im Oktober 2026 mit fünf Pilotfolgen, danach etwa eine neue Folge pro Woche.</p>
+    <p>Kurze Folgen zu je einem Wirkstoff oder Thema, als Dialog der KI-Stimmen Paul und Paula: einer neugierig, eine streng. Rund zwölf Minuten pro Folge, seit Oktober 2026 auch auf Englisch.</p>
+    <div class="links"><a href="https://open.spotify.com/show/033JO82L47Sg4YSmPYas0z" target="_blank" rel="noopener">Spotify ↗</a><a href="https://podcasts.apple.com/de/podcast/id6804214652" target="_blank" rel="noopener">Apple Podcasts ↗</a><a href="https://open.spotify.com/show/6SHPqZY376hMGedL77qGM7" target="_blank" rel="noopener">English Edition ↗</a></div>
    </article>
    <article class="p">
     <div class="thumb ph" aria-hidden="true"><div class="big">MCP</div><div class="chips"><span>ChatGPT</span><span>Claude</span><span>Gemini</span><span>Voice-Coach</span></div></div>
@@ -230,7 +225,7 @@ a.thumb:hover img{transform:scale(1.03)}
   <div class="gk">Tools und Apps</div>
   <div class="projects">
    <article class="p">
-    <div class="thumb ph" aria-hidden="true"><div class="big">Post-Planner</div><div class="chips"><span>LinkedIn</span><span>Instagram</span><span>TikTok</span><span>YouTube</span></div></div>
+    <div class="thumb"><img src="img/shot-post-planner.jpg" alt="Anmeldeseite des Social Post-Planners" loading="lazy" decoding="async"></div>
     <div class="meta"><span>Werkzeug</span><span class="badge live">im Einsatz</span></div>
     <h3>Social Post-Planner</h3>
     <p>Mein eigenes Redaktions- und Publishing-Studio für LinkedIn, Instagram, TikTok und YouTube, mit KI-Texten, KI-Bildern und einer Reel-Fabrik, die Kurzvideos automatisch baut.</p>
@@ -243,14 +238,14 @@ a.thumb:hover img{transform:scale(1.03)}
     <div class="links"><a href="https://phoeser.github.io/huckepack/" target="_blank" rel="noopener">Ansehen ↗</a></div>
    </article>
    <article class="p">
-    <a class="thumb" href="https://phoeser.github.io/aufschlag-check/" target="_blank" rel="noopener"><img src="img/shot-aufschlag-check.jpg" alt="Regelansicht des Tischtennis Aufschlag-Checks" loading="lazy" decoding="async"></a>
+    <a class="thumb" href="https://phoeser.github.io/aufschlag-check/" target="_blank" rel="noopener"><img src="img/shot-aufschlag-check-ergebnis.jpg" alt="Ergebnisansicht des Tischtennis Aufschlag-Checks: 9 von 9 Regeln erfüllt" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Web-App</span><span class="badge live">live</span></div>
     <h3>Tischtennis Aufschlag-Check</h3>
     <p>Prüft, ob ein Tischtennis-Aufschlag regelkonform ist. Entstanden aus meinem Hobby.</p>
     <div class="links"><a href="https://phoeser.github.io/aufschlag-check/" target="_blank" rel="noopener">Ausprobieren ↗</a></div>
    </article>
    <article class="p">
-    <div class="thumb ph" aria-hidden="true"><svg viewBox="0 0 240 80" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 44h52l10-22 14 46 14-58 12 34h28l8-12 10 24 8-12h76"/></svg><div class="chips"><span>Webcam</span><span>Puls</span><span>Stress</span></div></div>
+    <a class="thumb" href="https://github.com/phoeser/stress-check" target="_blank" rel="noopener"><img src="img/shot-stress-check.jpg" alt="Ergebnisansicht des Stress-Checks mit Stresswert, Puls und Pulssignal" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Experiment</span><span class="badge">Prototyp</span></div>
     <h3>Stress-Check</h3>
     <p>Puls- und Stressmessung über die Webcam (Remote-Photoplethysmographie), ganz ohne Sensor am Körper.</p>
@@ -277,7 +272,7 @@ a.thumb:hover img{transform:scale(1.03)}
   <div class="sec-head" style="display:block;margin:0"><div class="k">03 · Über mich</div></div>
   <div>
    <p class="lead">Ich gebe Richtung, Haltung und Qualität vor, die KI setzt um, und ich nehme jedes Ergebnis selbst ab.</p>
-   <p>Seit April 2026 arbeite ich intensiv mit Claude und anderen KI-Werkzeugen. Programmieren kann ich nicht, das muss ich auch nicht: Mit No-Code- und Low-Code-Werkzeugen sind in wenigen Monaten eine Wissensplattform, mehrere Podcasts, ein MCP-Server, ein eigenes Publishing-Tool und neun Musikalben entstanden. Im Job wie privat treibt mich dieselbe Frage an: Wie wird aus einer Idee schnell etwas, das Menschen wirklich nutzen?</p>
+   <p>Seit April 2026 arbeite ich intensiv mit Claude und anderen KI-Werkzeugen. Programmieren kann ich nicht, das muss ich auch nicht: Mit No-Code- und Low-Code-Werkzeugen sind in wenigen Monaten eine Wissensplattform, mehrere Podcasts, zwei MCP-Server, ein eigenes Publishing-Tool und zwölf Musikalben entstanden. Im Job wie privat treibt mich dieselbe Frage an: Wie wird aus einer Idee schnell etwas, das Menschen wirklich nutzen?</p>
    <div class="tags"><span>München</span><span>Tischtennis</span><span>Biohacking und Longevity</span><span>KI</span><span>Psytrance und Organic House</span><span>Reggaeton und Deutschpunk</span><span>Español</span></div>
   </div>
  </div>
