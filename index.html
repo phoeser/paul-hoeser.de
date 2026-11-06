@@ -8,6 +8,13 @@
 <meta property="og:title" content="Paul Höser · Projekte">
 <meta property="og:description" content="Marketing-Manager, Builder, Podcaster. Alle Projekte auf einen Blick.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://paulhoeser.de/">
+<meta property="og:image" content="https://paulhoeser.de/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://paulhoeser.de/">
 <link rel="preconnect" href="https://fonts.bunny.net">
 <link href="https://fonts.bunny.net/css?family=inter:400,500|newsreader:400,400i,500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231a1a1a'/><text x='32' y='43' font-family='Georgia,serif' font-size='30' fill='%23FAFAF7' text-anchor='middle'>PH</text></svg>">
@@ -75,9 +82,23 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
 .hp figure:last-child{margin-bottom:0}
 .hp figcaption{font-size:15px;font-weight:500;margin-bottom:6px}
 .hp audio{width:100%;height:40px}
+.group>*,.p,.book>*{min-width:0}
+.thumb{display:block;position:relative;aspect-ratio:3/2;margin-bottom:16px;border-radius:8px;overflow:hidden;background:var(--card);border:1px solid var(--hair)}
+.thumb img{display:block;width:100%;height:100%;object-fit:cover;object-position:top center;transition:transform .5s ease}
+a.thumb:hover img{transform:scale(1.03)}
+.thumb.cover{display:flex;align-items:center;justify-content:center}
+.thumb.cover img{width:auto;height:78%;aspect-ratio:1/1;border-radius:6px;box-shadow:0 10px 28px rgba(0,0,0,.22)}
+.thumb.mosaic{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:2px;background:var(--hair)}
+.thumb.mosaic img{object-position:center}
+.thumb.ph{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;text-align:center}
+.thumb.ph .big{font-family:Newsreader,Georgia,serif;font-size:clamp(34px,4vw,48px);line-height:1;color:var(--ink)}
+.thumb.ph .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.thumb.ph .chips span{border:1px solid var(--hair);background:var(--bg);border-radius:999px;padding:3px 11px;font-size:13px;color:var(--muted)}
+.thumb.ph svg{width:72%;height:auto;color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.thumb img{transition:none} a.thumb:hover img{transform:none}}
 @media (max-width:820px){
  .book{grid-template-columns:1fr} .book img{max-width:200px}
- .sec-head,.group,.cv li,.about{grid-template-columns:1fr;gap:8px}
+ .sec-head,.group,.cv li,.about{grid-template-columns:minmax(0,1fr);gap:8px}
  .projects{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
  nav a{margin-left:14px}
@@ -136,23 +157,27 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
   <div class="gk">Wissen und Gesundheit</div>
   <div class="projects">
    <article class="p">
+    <a class="thumb" href="https://biohackingkompakt.de" target="_blank" rel="noopener"><img src="img/shot-biohacking-kompakt.jpg" alt="Startseite von biohackingkompakt.de" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Website</span><span class="badge live">live</span></div>
     <h3>Biohacking Kompakt</h3>
     <p>Unabhängige Wissensdatenbank zu Supplements, Peptiden und Longevity. Über 200 Einträge, jeder bewertet mit dem eigenen BK-Score auf fünf Achsen. Leitsatz: Wissenschaft statt Hype.</p>
     <div class="links"><a href="https://biohackingkompakt.de" target="_blank" rel="noopener">biohackingkompakt.de ↗</a></div>
    </article>
    <article class="p">
+    <a class="thumb cover" href="https://open.spotify.com/show/033JO82L47Sg4YSmPYas0z" target="_blank" rel="noopener"><img src="img/cover-bk-podcast.jpg" alt="Cover des Podcasts Biohacking Kompakt" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Podcast</span><span class="badge live">live</span></div>
     <h3>Biohacking Kompakt, der Podcast</h3>
     <p>Kurze Folgen zu je einem Wirkstoff oder Thema, als Dialog der KI-Stimmen Paul und Paula: einer neugierig, eine streng. Rund zwölf Minuten pro Folge.</p>
     <div class="links"><a href="https://open.spotify.com/show/033JO82L47Sg4YSmPYas0z" target="_blank" rel="noopener">Spotify ↗</a><a href="https://podcasts.apple.com/de/podcast/id6804214652" target="_blank" rel="noopener">Apple Podcasts ↗</a></div>
    </article>
    <article class="p">
+    <div class="thumb cover"><img src="img/cover-bk-english.jpg" alt="Cover von Biohacking Kompakt, English Edition" loading="lazy" decoding="async"></div>
     <div class="meta"><span>Podcast</span><span class="badge live">neu</span></div>
     <h3>Biohacking Kompakt, English Edition</h3>
     <p>Die englische Ausgabe als eigene Show, gestartet im Oktober 2026 mit fünf Pilotfolgen, danach etwa eine neue Folge pro Woche.</p>
    </article>
    <article class="p">
+    <div class="thumb ph" aria-hidden="true"><div class="big">MCP</div><div class="chips"><span>ChatGPT</span><span>Claude</span><span>Gemini</span><span>Voice-Coach</span></div></div>
     <div class="meta"><span>KI-Integration</span><span class="badge live">live</span></div>
     <h3>Biohacking Kompakt in ChatGPT, Claude und Gemini</h3>
     <p>Ein eigener MCP-Server, über den KI-Assistenten die Datenbank und den Podcast direkt abfragen. Dazu gibt es eine ChatGPT-App, ein Claude-Plugin, eine Gemini-Erweiterung und einen Voice-Coach auf der Website.</p>
@@ -165,18 +190,21 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
   <div class="gk">Podcasts und Musik</div>
   <div class="projects">
    <article class="p">
+    <a class="thumb mosaic" href="https://pachapaul.de" target="_blank" rel="noopener"><img src="img/cover-pp-herzarbeit.jpg" alt="Albumcover Herzarbeit" loading="lazy" decoding="async"><img src="img/cover-pp-pacha-rock.jpg" alt="Albumcover Pacha Rock" loading="lazy" decoding="async"><img src="img/cover-pp-agua-tierra-luz.jpg" alt="Albumcover Agua, Tierra, Luz" loading="lazy" decoding="async"><img src="img/cover-pp-reggaeton-2026.jpg" alt="Albumcover Reggaeton 2026" loading="lazy" decoding="async"><img src="img/cover-pp-sessions-1.jpg" alt="Albumcover Sessions, Vol. 1" loading="lazy" decoding="async"><img src="img/cover-pp-laut-und-klar.jpg" alt="Albumcover Laut &amp; Klar" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Musik</span><span class="badge live">live</span></div>
     <h3>Pachapaul</h3>
     <p>Mein KI-Musikprojekt: Die Texte schreibe ich, den Sound macht die KI. Singen kann nur die KI ;-) Von Organic House und Reggaeton bis Punk und Rock, mit klarer Haltung gegen rechts.</p>
     <div class="links"><a href="https://pachapaul.de" target="_blank" rel="noopener">pachapaul.de ↗</a><a href="https://open.spotify.com/artist/2gtdG1sR7cciocE37CeNYg" target="_blank" rel="noopener">Spotify ↗</a></div>
    </article>
    <article class="p">
+    <a class="thumb cover" href="https://phoeser.github.io/topf-und-tempo/" target="_blank" rel="noopener"><img src="img/cover-topf-und-tempo.jpg" alt="Cover des Podcasts Topf und Tempo" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Podcast</span><span class="badge live">live</span></div>
     <h3>Topf und Tempo</h3>
     <p>Der Mitkoch-Podcast: einschalten und gemeinsam kochen.</p>
     <div class="links"><a href="https://phoeser.github.io/topf-und-tempo/" target="_blank" rel="noopener">Zum Podcast ↗</a></div>
    </article>
    <article class="p">
+    <div class="thumb ph" aria-hidden="true"><div class="big">MFP</div><div class="chips"><span>Studien</span><span>Case Studies</span><span>Fakten statt Mythen</span></div></div>
     <div class="meta"><span>Podcast</span><span class="badge">in Planung</span></div>
     <h3>MFP, der Marketing Fact Podcast</h3>
     <p>Marketing-Fakten statt Mythen: Studien und Case Studies kompakt aufbereitet, für Marketing-Profis und Entscheider.</p>
@@ -188,23 +216,27 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
   <div class="gk">Tools und Apps</div>
   <div class="projects">
    <article class="p">
+    <div class="thumb ph" aria-hidden="true"><div class="big">Post-Planner</div><div class="chips"><span>LinkedIn</span><span>Instagram</span><span>TikTok</span><span>YouTube</span></div></div>
     <div class="meta"><span>Werkzeug</span><span class="badge live">im Einsatz</span></div>
     <h3>Social Post-Planner</h3>
     <p>Mein eigenes Redaktions- und Publishing-Studio für LinkedIn, Instagram, TikTok und YouTube, mit KI-Texten, KI-Bildern und einer Reel-Fabrik, die Kurzvideos automatisch baut.</p>
    </article>
    <article class="p">
+    <a class="thumb" href="https://phoeser.github.io/huckepack/" target="_blank" rel="noopener"><img src="img/shot-huckepack.jpg" alt="Anmeldeseite der Huckepack-App" loading="lazy" decoding="async"></a>
     <div class="meta"><span>App</span><span class="badge">in Arbeit</span></div>
     <h3>Huckepack</h3>
     <p>Mitfahr-App für kurze Stadtstrecken in München, spontan, günstig und nachhaltig. Der Start soll über Anlässe wie Fußball, Wiesn und Nachtleben laufen.</p>
     <div class="links"><a href="https://phoeser.github.io/huckepack/" target="_blank" rel="noopener">Ansehen ↗</a></div>
    </article>
    <article class="p">
+    <a class="thumb" href="https://phoeser.github.io/aufschlag-check/" target="_blank" rel="noopener"><img src="img/shot-aufschlag-check.jpg" alt="Regelansicht des Tischtennis Aufschlag-Checks" loading="lazy" decoding="async"></a>
     <div class="meta"><span>Web-App</span><span class="badge live">live</span></div>
     <h3>Tischtennis Aufschlag-Check</h3>
     <p>Prüft, ob ein Tischtennis-Aufschlag regelkonform ist. Entstanden aus meinem Hobby.</p>
     <div class="links"><a href="https://phoeser.github.io/aufschlag-check/" target="_blank" rel="noopener">Ausprobieren ↗</a></div>
    </article>
    <article class="p">
+    <div class="thumb ph" aria-hidden="true"><svg viewBox="0 0 240 80" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 44h52l10-22 14 46 14-58 12 34h28l8-12 10 24 8-12h76"/></svg><div class="chips"><span>Webcam</span><span>Puls</span><span>Stress</span></div></div>
     <div class="meta"><span>Experiment</span><span class="badge">Prototyp</span></div>
     <h3>Stress-Check</h3>
     <p>Puls- und Stressmessung über die Webcam (Remote-Photoplethysmographie), ganz ohne Sensor am Körper.</p>
