@@ -30,7 +30,7 @@ nav a:hover{color:var(--ink)}
 .hero h1{font-size:clamp(44px,7.4vw,92px);line-height:1.02;letter-spacing:-.02em;max-width:14ch}
 .hero h1 em{font-style:italic;color:var(--accent)}
 .hero p{margin-top:28px;max-width:58ch;color:var(--muted);font-size:19px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-top:56px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px;margin-top:56px}
 .stat b{display:block;font-family:Newsreader,Georgia,serif;font-weight:400;font-size:40px;line-height:1}
 .stat span{font-size:14px;color:var(--faint)}
 section{padding:88px 0;border-bottom:1px solid var(--hair)}
@@ -62,7 +62,21 @@ section{padding:88px 0;border-bottom:1px solid var(--hair)}
 .tags span{background:var(--card);border-radius:999px;padding:5px 14px;font-size:14px;color:var(--muted)}
 footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .contact{font-family:Newsreader,Georgia,serif;font-size:clamp(28px,4vw,44px);line-height:1.2}
+.book{display:grid;grid-template-columns:200px 1fr;gap:32px;border-top:1px solid var(--line);padding:20px 0 8px}
+.book img{width:100%;height:auto;border-radius:4px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.book h3{font-size:26px;font-weight:500;line-height:1.25;margin-bottom:4px}
+.book .sub{font-family:Newsreader,Georgia,serif;font-style:italic;font-size:19px;color:var(--muted);margin-bottom:12px}
+.book p{color:var(--muted);font-size:16px}
+.book .links{margin-top:14px;font-size:15px;display:flex;flex-wrap:wrap;gap:6px 18px}
+.book .links a{font-weight:500}
+.hp{margin-top:22px;padding:16px 18px;background:var(--card);border-radius:10px}
+.hp .t{font-size:14px;color:var(--faint);margin-bottom:10px}
+.hp figure{margin:0 0 12px}
+.hp figure:last-child{margin-bottom:0}
+.hp figcaption{font-size:15px;font-weight:500;margin-bottom:6px}
+.hp audio{width:100%;height:40px}
 @media (max-width:820px){
+ .book{grid-template-columns:1fr} .book img{max-width:200px}
  .sec-head,.group,.cv li,.about{grid-template-columns:1fr;gap:8px}
  .projects{grid-template-columns:1fr}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -84,6 +98,7 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
  <h1 class="serif">Ich baue Dinge, die es <em>noch nicht</em> gibt.</h1>
  <p>Marketing-Manager, Builder, Podcaster aus München. Seit 2026 setze ich meine Ideen mit KI um, ohne selbst zu programmieren: Wissensplattformen, Podcasts, Musik und Werkzeuge für den Alltag.</p>
  <div class="stats">
+  <div class="stat"><b>1</b><span>Buch mit Hörbuch</span></div>
   <div class="stat"><b>200+</b><span>bewertete Wirkstoffe</span></div>
   <div class="stat"><b>100+</b><span>Podcastfolgen</span></div>
   <div class="stat"><b>9</b><span>KI-Musikalben</span></div>
@@ -93,6 +108,27 @@ footer{padding:56px 0 64px;font-size:14px;color:var(--faint);display:flex;justif
 
 <section id="projekte">
  <div class="sec-head"><div class="k">01 · Projekte</div><h2 class="serif">Was ich gerade baue</h2></div>
+
+ <div class="group">
+  <div class="gk">Buch</div>
+  <div>
+   <article class="book">
+    <a href="https://buchshop.bod.de/vibe-coding-mit-claude-code-fuer-nicht-programmierer-paul-hoeser-9783696797300" target="_blank" rel="noopener"><img src="buch/cover.jpg" alt="Buchcover: Vibe Coding mit Claude Code für Nicht-Programmierer" width="400" height="542" loading="lazy"></a>
+    <div>
+     <div class="meta" style="display:flex;justify-content:space-between;font-size:13px;color:var(--faint);margin-bottom:6px"><span>Buch · 206 Seiten · Oktober 2026</span><span class="badge live">neu</span></div>
+     <h3>Vibe Coding mit Claude Code für Nicht-Programmierer</h3>
+     <div class="sub">Ich programmiere nicht. Ich beschreibe.</div>
+     <p>Mein Weg vom Marketing-Manager zum Builder: wie man mit einem KI-Agenten eigene Werkzeuge baut, ohne eine Zeile Code. Sechs echte Projekte mit allen Umwegen, 50 Vorlagen zum Kopieren und ein ehrlicher Vergleich mit Codex, Cursor und Antigravity. Das Hörbuch spricht mein Stimmklon.</p>
+     <div class="links"><a href="https://buchshop.bod.de/vibe-coding-mit-claude-code-fuer-nicht-programmierer-paul-hoeser-9783696797300" target="_blank" rel="noopener">BoD-Shop mit Leseprobe ↗</a><a href="https://www.amazon.de/dp/3696797308" target="_blank" rel="noopener">Amazon ↗</a><a href="https://ki-news-kompakt.de/buch" target="_blank" rel="noopener">Begleitseite ↗</a></div>
+     <div class="hp">
+      <div class="t">Hörprobe · gesprochen von meinem KI-Stimmklon</div>
+      <figure><figcaption>Vorwort: Ich bin kein Programmierer</figcaption><audio controls preload="none" src="buch/hoerprobe-1-vorwort.mp3"></audio></figure>
+      <figure><figcaption>Kapitel 10: KI schaut hin</figcaption><audio controls preload="none" src="buch/hoerprobe-2-kapitel-10.mp3"></audio></figure>
+     </div>
+    </div>
+   </article>
+  </div>
+ </div>
 
  <div class="group">
   <div class="gk">Wissen und Gesundheit</div>
