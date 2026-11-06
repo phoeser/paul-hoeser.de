@@ -157,11 +157,11 @@ def page(title, desc, body, path="", og_img=None, cur="", depth=0):
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23081214%22/%3E%3Cpath d=%22M7 23l6-6 5 3 7-9%22 fill=%22none%22 stroke=%22%23b8f040%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Ccircle cx=%2225%22 cy=%2211%22 r=%222.6%22 fill=%22%232fd3b2%22/%3E%3C/svg%3E"><link rel="alternate" type="application/rss+xml" title="Marketing Facts Kompakt" href="{RSS}">
 <link rel="stylesheet" href="{pre}style.css">{THEME_JS}</head><body>
 <header class="top"><div class="wrap"><a class="brand" href="{pre}./"><img src="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23081214%22/%3E%3Cpath d=%22M7 23l6-6 5 3 7-9%22 fill=%22none%22 stroke=%22%23b8f040%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Ccircle cx=%2225%22 cy=%2211%22 r=%222.6%22 fill=%22%232fd3b2%22/%3E%3C/svg%3E" alt=""><span>Marketing Facts <b>Kompakt</b></span></a>
-<nav class="links">{nav("./", "Folgen", "home")}{nav("ueber/", "Über", "ueber", "hide-s")}{nav("./#weitere-podcasts", "Weitere Podcasts", "x", "hide-s")}</nav>
+<nav class="links">{nav("./", "Folgen", "home")}{nav("studien/", "Studien", "studien")}{nav("ueber/", "Über", "ueber", "hide-s")}{nav("./#weitere-podcasts", "Weitere Podcasts", "x", "hide-s")}</nav>
 <button class="theme" onclick="mfkTheme()" aria-label="Hell/Dunkel umschalten" title="Hell/Dunkel"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button></div></header>
 <main class="wrap">{body}</main>
 <footer><div class="wrap"><span>© 2026 Paul Höser · Marketing Facts Kompakt</span>
-<nav><a href="{RSS}">RSS</a><a href="{pre}ueber/">Über</a><a href="{pre}impressum/">Impressum</a><a href="{pre}datenschutz/">Datenschutz</a></nav></div></footer>
+<nav><a href="{RSS}">RSS</a><a href="{pre}studien/">Studien</a><a href="{pre}ueber/">Über</a><a href="{pre}impressum/">Impressum</a><a href="{pre}datenschutz/">Datenschutz</a></nav></div></footer>
 {PLAYER_JS.format(pre=pre)}</body></html>"""
 
 
@@ -290,3 +290,10 @@ write("sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="htt
 write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {BASE}/sitemap.xml\n")
 write("README.md", "# Marketing Facts Kompakt\n\nWebsite zum Podcast von Paul Höser: " + BASE + "\n\nStatisch erzeugt aus dem RSS-Feed (" + RSS + ").\n")
 print("ok", len(eps), "Folgen")
+# Studiendatenbank: studien.py und studien.json liegen neben build.py; fehlen sie (z. B. nur build.py heruntergeladen), aus dem Repo holen
+_hier = os.path.dirname(os.path.abspath(__file__))
+for _n in ("studien.py", "studien.json"):
+    if not os.path.exists(os.path.join(_hier, _n)):
+        _r = urllib.request.Request("https://raw.githubusercontent.com/phoeser/phoeser.github.io/main/marketing-facts-kompakt/_werkzeug/" + _n, headers={"User-Agent": "mfk-site-builder"})
+        open(os.path.join(_hier, _n), "wb").write(urllib.request.urlopen(_r, timeout=60).read())
+exec(open(os.path.join(_hier, "studien.py"), encoding="utf-8").read())
