@@ -59,9 +59,14 @@ section{padding:88px 0;border-bottom:1px solid var(--hair)}
 .cv{list-style:none}
 .cv li{display:grid;grid-template-columns:220px 1fr;gap:32px;padding:22px 0;border-top:1px solid var(--hair)}
 .cv li:first-child{border-top:1px solid var(--line)}
-.cv .org{font-weight:500}
-.cv .role{font-family:Newsreader,Georgia,serif;font-size:22px;line-height:1.3}
-.cv .desc{color:var(--muted);font-size:16px;margin-top:4px}
+.cv-intro{color:var(--muted);max-width:62ch;margin:-24px 0 40px 252px}
+.cv .when{font-weight:500;font-size:16px}
+.cv .where{font-size:14px;color:var(--faint);margin-top:2px}
+.cv .org{font-size:14px;color:var(--faint);letter-spacing:.02em;margin-bottom:2px}
+.cv .role{font-family:Newsreader,Georgia,serif;font-size:24px;line-height:1.25}
+.cv .role-de{font-size:15px;color:var(--muted);margin-top:2px}
+.cv .desc{color:var(--muted);font-size:16px;margin-top:10px;max-width:62ch}
+.cv .now{display:inline-block;font-size:12px;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:1px 9px;margin-left:8px;vertical-align:2px}
 .about{display:grid;grid-template-columns:220px 1fr;gap:32px}
 .about .lead{font-family:Newsreader,Georgia,serif;font-size:clamp(22px,2.6vw,28px);line-height:1.45}
 .about .lead+p{margin-top:20px;color:var(--muted)}
@@ -103,6 +108,7 @@ a.thumb:hover img{transform:scale(1.03)}
  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
  nav a{margin-left:14px}
  .hero{padding:40px 0 64px} section{padding:64px 0}
+ .cv-intro{margin:-24px 0 32px 0}
 }
 @media (max-width:480px){.wrap{padding:0 16px} nav a:nth-child(3){display:none}}
 </style>
@@ -248,13 +254,13 @@ a.thumb:hover img{transform:scale(1.03)}
 
 <section id="werdegang">
  <div class="sec-head"><div class="k">02 · Werdegang</div><h2 class="serif">Immer im Direktgeschäft</h2></div>
+ <p class="cv-intro">Seit 2006 im Marketing, fast immer im Direktgeschäft: erst Produktmarketing und Performance in der Telekommunikation, seit 2018 Marketingleitung in der Versicherung.</p>
  <ul class="cv">
-  <li><div class="org">ERGO Group, München</div><div><div class="role">Bereichsleiter Direkt- und Online-Marketing</div><div class="desc">Verantwortung für das gesamte Direkt- und Online-Marketing in Deutschland und, als Global Competence Center Online-Marketing, für weitere Länder: Lead-Generierung, Search und Programmatic, Kooperationen, Bestandskundenmarketing und Marketing Intelligence.</div></div></li>
-  <li><div class="org">Die Hannoversche</div><div><div class="role">Marketingleiter</div><div class="desc">Markenübergreifende Führung des Marketings beim Direktversicherer.</div></div></li>
-  <li><div class="org">Vodafone</div><div><div class="role">Produktmanagement</div><div class="desc">Produktmanagement in der Telekommunikation, mit Fokus aufs Direktgeschäft.</div></div></li>
-  <li><div class="org">Kabel Deutschland</div><div><div class="role">Produktmanagement</div><div class="desc">Produktmanagement im Direktgeschäft.</div></div></li>
-  <li><div class="org">1&amp;1</div><div><div class="role">Produktmanagement</div><div class="desc">Produktmanagement im Direktgeschäft.</div></div></li>
-  <li><div class="org">Universität</div><div><div class="role">Diplom-Ökonom</div></div></li>
+  <li><div><div class="when">seit Juli 2022<span class="now">aktuell</span></div><div class="where">Nürnberg</div></div><div><div class="org">ERGO Group AG</div><div class="role">Global Head of Direct &amp; Online Marketing</div><div class="role-de">Bereichsleiter Direkt- und Online-Marketing</div><div class="desc">Verantwortung für das gesamte Direkt- und Online-Marketing der ERGO in Deutschland und, als Global Competence Center Online-Marketing, für weitere Länder: Lead-Generierung, Search und Programmatic, Kooperationen, Bestandskundenmarketing und Marketing Intelligence.</div></div></li>
+  <li><div><div class="when">Mai 2018 – Juni 2022</div><div class="where">Hannover</div></div><div><div class="org">Hannoversche Lebensversicherung AG</div><div class="role">Marketingleiter</div><div class="desc">Verantwortlich für das B2C- und B2B-Marketing der Hannoverschen in Deutschland und Österreich, markenübergreifend.</div></div></li>
+  <li><div><div class="when">Dez. 2010 – Apr. 2018</div><div class="where">München</div></div><div><div class="org">Vodafone Kabel Deutschland GmbH</div><div class="role">Leiter Performance Management (Marketing)</div><div class="desc">Performance Management im Marketing für das Direktgeschäft, bei Kabel Deutschland und nach der Übernahme durch Vodafone.</div></div></li>
+  <li><div><div class="when">Feb. 2006 – Nov. 2010</div><div class="where">Karlsruhe</div></div><div><div class="org">1&amp;1 Internet AG</div><div class="role">Head of Product Marketing Consumer</div><div class="desc">Produktmarketing für Privatkunden im Online-Direktvertrieb.</div></div></li>
+  <li><div><div class="when">1995 – 2000</div><div class="where">Hannover</div></div><div><div class="org">Leibniz Universität Hannover</div><div class="role">Diplom-Ökonom</div><div class="desc">Schwerpunkte Controlling, Wirtschaftsinformatik und Produktion.</div></div></li>
  </ul>
 </section>
 
