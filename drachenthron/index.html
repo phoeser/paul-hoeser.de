@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0b1622">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Drachenthron – Kampf um Aetheria</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0b1622;color:#f3ead7;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh}
+header{display:flex;align-items:center;gap:8px;padding:6px 10px;padding-top:max(6px,env(safe-area-inset-top));background:linear-gradient(#1c2b3d,#132132);border-bottom:2px solid #c9a24a}
+.chip{display:flex;align-items:center;gap:6px;font-weight:800;font-size:15px;white-space:nowrap}
+.dot{width:14px;height:14px;border-radius:50%;border:2px solid #fff;flex:none}
+#stats{display:flex;gap:12px;font-size:14px;flex:1;justify-content:center;flex-wrap:wrap;font-weight:700}
+.hbtn{background:#2b3f57;border:1px solid #c9a24a;color:#f3ead7;border-radius:10px;min-width:42px;height:38px;font-size:18px;cursor:pointer}
+#mapwrap{position:relative;flex:1;min-height:0;background:#12344f;touch-action:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#ticker{position:absolute;left:8px;top:8px;right:60px;pointer-events:none;display:flex;flex-direction:column;gap:4px}
+.tick{background:rgba(10,20,30,.82);border-left:4px solid #c9a24a;padding:4px 8px;border-radius:6px;font-size:13px;width:fit-content;max-width:100%;animation:fade 7s forwards}
+.tick.bad{border-color:#e0574a}.tick.good{border-color:#5bd27a}
+@keyframes fade{0%{opacity:0;transform:translateY(-4px)}6%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+#zoom{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px}
+#zoom button{width:42px;height:42px;border-radius:10px;border:1px solid #c9a24a;background:rgba(20,35,52,.85);color:#f3ead7;font-size:22px;font-weight:800;cursor:pointer}
+footer{background:#132132;border-top:2px solid #c9a24a;padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+#phaseInfo{font-size:14px;margin-bottom:6px;min-height:20px;line-height:1.35}
+#phaseInfo b{color:#e8c25a}
+#actions{display:flex;gap:6px;flex-wrap:wrap}
+.btn{flex:1 1 auto;min-height:46px;border:0;border-radius:10px;padding:8px 12px;font-size:15px;font-weight:800;background:#2b3f57;color:#f3ead7;cursor:pointer}
+.btn.gold{background:linear-gradient(#f0cc66,#b8892c);color:#241a05}
+.btn.red{background:linear-gradient(#e8665a,#a3291f);color:#fff}
+.btn.green{background:linear-gradient(#5bd27a,#22833d);color:#04220c}
+.btn:disabled{opacity:.38;cursor:default}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:10}
+#sheet.hidden{display:none}
+.card{background:#182838;border:2px solid #c9a24a;border-bottom:0;border-radius:18px 18px 0 0;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+@media(min-width:700px){#sheet{align-items:center}.card{border-radius:18px;border-bottom:2px solid #c9a24a}}
+h2{margin:0 0 8px;font-size:20px;color:#e8c25a}
+p{margin:6px 0;line-height:1.4;font-size:14px}
+.vs{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800}
+.vs .side{flex:1;padding:8px;border-radius:10px;background:#21354a;text-align:center;font-size:14px}
+.vs .big{font-size:26px;display:block}
+.dice{display:flex;gap:8px;justify-content:center;margin:10px 0;min-height:44px;align-items:center}
+.die{width:42px;height:42px;border-radius:9px;display:grid;place-items:center;font-size:22px;font-weight:900;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.die.a{background:#d8483b;color:#fff}.die.d{background:#f3ead7;color:#222}
+.die.lose{opacity:.3}
+.die sup{position:absolute;top:-7px;right:-7px;font-size:11px;background:#e8c25a;color:#000;border-radius:6px;padding:1px 4px}
+.die.roll{animation:shake .25s infinite}
+@keyframes shake{0%{transform:rotate(-12deg)}50%{transform:rotate(12deg) scale(1.08)}100%{transform:rotate(-12deg)}}
+.result{text-align:center;font-weight:800;min-height:22px;font-size:15px}
+.item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:12px;background:#21354a;margin:6px 0}
+.item .ic{font-size:28px;width:38px;text-align:center;flex:none}
+.item .tx{flex:1;font-size:13px;line-height:1.3}.item .tx b{font-size:15px;display:block;color:#f3ead7}
+.item .btn{flex:none;min-width:84px}
+.bar{height:8px;border-radius:4px;background:#0d1a26;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%}
+#start{position:fixed;inset:0;z-index:20;background:radial-gradient(circle at 50% 25%,#2a4a6b,#08111a 70%);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 16px}
+#start .inner{max-width:520px;width:100%;margin:auto}
+.title{font-size:38px;font-weight:900;text-align:center;color:#f0cc66;text-shadow:0 3px 0 #6b4a10,0 0 24px rgba(240,204,102,.4);letter-spacing:1px;margin:4px 0 0}
+.sub{text-align:center;color:#c8d6e5;margin:2px 0 16px;font-size:15px}
+.lbl{font-weight:800;margin:14px 0 6px;color:#e8c25a;font-size:14px}
+.facs{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.fac{padding:10px;border-radius:12px;background:#1b2d40;border:2px solid transparent;cursor:pointer;display:flex;gap:8px;align-items:center;font-weight:800;font-size:14px}
+.fac.on{border-color:#f0cc66;background:#26405a}
+.fac .em{font-size:24px}
+.seg{display:flex;gap:6px}.seg .btn{min-height:42px}
+.seg .btn.on{background:linear-gradient(#f0cc66,#b8892c);color:#241a05}
+.hidden{display:none!important}
+.small{font-size:12px;opacity:.8}
+@media(max-height:480px){header{padding:3px 8px}.hbtn{height:32px}#phaseInfo{margin-bottom:4px;font-size:13px}.btn{min-height:38px;padding:6px 10px;font-size:14px}footer{padding:5px 8px}}
+ul{padding-left:18px;margin:6px 0}li{margin:3px 0;font-size:14px;line-height:1.35}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="chip" id="who"></div>
+    <div id="stats"></div>
+    <button class="hbtn" id="bDip" title="Diplomatie">🤝</button>
+    <button class="hbtn" id="bMenu" title="Menü">☰</button>
+  </header>
+  <div id="mapwrap">
+    <canvas id="cv"></canvas>
+    <div id="ticker"></div>
+    <div id="zoom"><button id="zin">+</button><button id="zout">−</button><button id="zfit">⤢</button></div>
+  </div>
+  <footer><div id="phaseInfo"></div><div id="actions"></div></footer>
+</div>
+<div id="sheet" class="hidden"><div class="card" id="card"></div></div>
+
+<div id="start"><div class="inner">
+  <div style="text-align:center;font-size:54px">🐉</div>
+  <h1 class="title">DRACHENTHRON</h1>
+  <div class="sub">Der Kampf um Aetheria</div>
+  <div class="lbl">Wähle dein Volk</div>
+  <div class="facs" id="facs"></div>
+  <div class="lbl">Anzahl Gegner</div>
+  <div class="seg" id="segOpp"><button class="btn" data-v="2">2</button><button class="btn on" data-v="3">3</button><button class="btn" data-v="4">4</button></div>
+  <div class="lbl">Schwierigkeit</div>
+  <div class="seg" id="segDiff"><button class="btn" data-v="0">Leicht</button><button class="btn on" data-v="1">Normal</button><button class="btn" data-v="2">Schwer</button></div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+    <button class="btn gold" id="bNew" style="font-size:18px;min-height:54px">⚔️ Neues Spiel – neue Welt</button>
+    <button class="btn green hidden" id="bCont">▶️ Weiterspielen</button>
+    <button class="btn" id="bHelp">📜 So geht's</button>
+  </div>
+  <p class="small" style="text-align:center;margin-top:14px">Tipp: Hochkant oder quer – die Welt passt sich an. Mit zwei Fingern zoomen, mit einem Finger schieben.</p>
+</div></div>
+
+<script>
+"use strict";
+/* ================= Grunddaten ================= */
+let GW=360, GH=225;
+const FACTIONS=[
+  {name:'Drachenorden', color:[214,64,52],  em:'🐉'},
+  {name:'Elfenbund',    color:[52,168,84],  em:'🧝'},
+  {name:'Zwergenreich', color:[226,172,48], em:'⛏️'},
+  {name:'Schattenclan', color:[146,84,200], em:'🦇'},
+  {name:'Meervolk',     color:[46,128,214], em:'🔱'},
+];
+const REALMS=[
+  {name:'Drachenspitzen', tint:[120,70,50],  names:['Glutberg','Aschental','Feuerschlund','Krallenpass','Rauchzinne','Schuppenkamm','Lavafurt']},
+  {name:'Nebelwald',      tint:[40,95,55],   names:['Mooshain','Elfenhain','Dämmerforst','Wispertal','Farnmoor','Silberbach','Eichenthron']},
+  {name:'Frostlande',     tint:[225,238,248],names:['Eiszahn','Schneefeste','Gletscherbucht','Frostheim','Weißkap','Nordwacht','Wolfsheul']},
+  {name:'Sonnenwüste',    tint:[232,204,135],names:['Glutsand','Oase Amun','Dünenmeer','Skorpionfels','Goldtal','Sphinxtor','Kamelbrunn']},
+  {name:'Schattenmoor',   tint:[55,40,70],   names:['Krähenfenn','Nachtsumpf','Gruftheim','Irrlicht','Dornwall','Rabenstein','Nebelgrab']},
+  {name:'Kristallinseln', tint:[95,205,215], names:['Saphirküste','Perlriff','Muschelhafen','Korallentor','Sturmkap','Leuchtfeuer','Kristallbucht']},
+];
+const POS=[[.17,.27],[.5,.21],[.83,.27],[.18,.74],[.51,.76],[.83,.73]];
+const SHOP=[
+  {k:'kn', ic:'⚔️', name:'Ritter',   cost:25, txt:'Beim Angriff von hier gewinnst du bei Gleichstand der Würfel.', unit:true},
+  {k:'dr', ic:'🐉', name:'Drache',   cost:60, txt:'+1 auf deinen höchsten Angriffswürfel. Fliegt 2 Felder weit – auch übers Meer.', unit:true},
+  {k:'castle', ic:'🏰', name:'Burg', cost:40, txt:'Verteidiger bekommt +1 auf den höchsten Würfel.'},
+  {k:'mine', ic:'💰', name:'Goldmine', cost:35, txt:'+4 Gold jede Runde.'},
+  {k:'barr', ic:'⛺', name:'Kaserne', cost:45, txt:'+2 Truppen jede Runde.'},
+  {k:'merc', ic:'🗡️', name:'Söldner', cost:15, txt:'Sofort +3 Truppen zum Verteilen.', repeat:true},
+];
+const DIFF=[{mult:.8,thr:1.6,gold:20},{mult:1,thr:1.3,gold:30},{mult:1.3,thr:1.1,gold:50}];
+const SAVE='drachenthron_save_v1';
+
+/* ================= Zufall & Rauschen ================= */
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function makeNoise(R){const N=64,g=new Float32Array(N*N);for(let i=0;i<g.length;i++)g[i]=R();
+  const v=(x,y)=>g[(((y%N)+N)%N)*N+(((x%N)+N)%N)], sm=t=>t*t*(3-2*t);
+  const n=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=sm(x-xi),yf=sm(y-yi),a=v(xi,yi),b=v(xi+1,yi),c=v(xi,yi+1),d=v(xi+1,yi+1);return a+(b-a)*xf+(c-a)*yf+(a-b-c+d)*xf*yf};
+  return (x,y)=>n(x/38,y/38)*.55+n(x/17+9,y/17+3)*.3+n(x/7+21,y/7+11)*.15;}
+const rnd=()=>Math.random(), ri=n=>Math.floor(Math.random()*n);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ================= Weltgenerator ================= */
+function genMap(seed,portrait){
+  GW=360;GH=225;
+  const R=rng(seed), nz=makeNoise(R), N=GW*GH;
+  const RS=REALMS.map((r,i)=>({i,cx:(POS[i][0]+(R()-.5)*.06)*GW,cy:(POS[i][1]+(R()-.5)*.08)*GH,r:(.14+R()*.035)*GW,ids:[]}));
+  const realm=new Int8Array(N).fill(-1), shade=new Float32Array(N);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const i=y*GW+x,n=nz(x,y);shade[i]=n;
+    let best=-9,bi=-1;for(const r of RS){const f=1-Math.hypot(x-r.cx,(y-r.cy)*1.2)/r.r;if(f>best){best=f;bi=r.i}}
+    const ed=Math.min(x,y,GW-1-x,GH-1-y)<4?-1:0;
+    if(best+(n-.5)*.9+ed>.06)realm[i]=bi;}
+  const seeds=[];
+  for(const r of RS){const cnt=4+Math.floor(R()*3),mine=[];let tries=0;
+    while(mine.length<cnt&&tries<1500){tries++;const a=R()*6.2832,d=Math.sqrt(R())*r.r*.9;
+      const x=Math.round(r.cx+Math.cos(a)*d),y=Math.round(r.cy+Math.sin(a)*d/1.2);
+      if(x<2||y<2||x>=GW-2||y>=GH-2||realm[y*GW+x]!==r.i)continue;
+      if(mine.some(s=>Math.hypot(s.x-x,s.y-y)<19))continue;mine.push({x,y,realm:r.i});}
+    for(const s of mine){s.id=seeds.length;seeds.push(s);r.ids.push(s.id)}}
+  let lab=new Int16Array(N).fill(-1);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const i=y*GW+x;if(realm[i]<0)continue;const r=RS[realm[i]];if(!r.ids.length)continue;
+    const px=x+(nz(x+400,y)-.5)*18,py=y+(nz(x,y+400)-.5)*18;let bd=1e9,b=-1;
+    for(const id of r.ids){const s=seeds[id],d=(s.x-px)**2+(s.y-py)**2;if(d<bd){bd=d;b=id}}lab[i]=b;}
+  // nur die größte zusammenhängende Fläche je Gebiet behalten
+  const comp=new Int32Array(N).fill(-1),csz=[],clab=[];
+  for(let i=0;i<N;i++){if(lab[i]<0||comp[i]>=0)continue;const c=csz.length,L=lab[i],st=[i];comp[i]=c;let sz=0;
+    while(st.length){const j=st.pop();sz++;const x=j%GW,y=(j/GW)|0;
+      for(const k of [x>0?j-1:-1,x<GW-1?j+1:-1,y>0?j-GW:-1,y<GH-1?j+GW:-1])if(k>=0&&comp[k]<0&&lab[k]===L){comp[k]=c;st.push(k)}}
+    csz.push(sz);clab.push(L);}
+  const bestC={};csz.forEach((s,c)=>{const L=clab[c];if(bestC[L]===undefined||csz[bestC[L]]<s)bestC[L]=c});
+  const size=new Int32Array(seeds.length);
+  for(let i=0;i<N;i++){if(lab[i]<0)continue;if(bestC[lab[i]]!==comp[i])lab[i]=-1;else size[lab[i]]++}
+  const remap=new Int16Array(seeds.length).fill(-1),T=[];
+  seeds.forEach(s=>{if(size[s.id]>=60){remap[s.id]=T.length;T.push({id:T.length,realm:s.realm,adj:[],sx:0,sy:0,n:0,coast:[]})}});
+  for(let i=0;i<N;i++)if(lab[i]>=0)lab[i]=remap[lab[i]];
+  // Namen
+  const usedNames=REALMS.map(r=>{const a=r.names.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a});
+  T.forEach(t=>{t.name=usedNames[t.realm].shift()||('Mark '+t.id)});
+  // Kanten, Nachbarn, Küsten
+  const edge=new Uint8Array(N),pair=new Map();
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){const i=y*GW+x,L=lab[i];if(L<0)continue;const t=T[L];t.sx+=x;t.sy+=y;t.n++;let e=0;
+    const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+    for(const[a,b]of nb){if(a<0||b<0||a>=GW||b>=GH){e=3;continue}const L2=lab[b*GW+a];
+      if(L2<0)e=3;else if(L2!==L){e=Math.max(e,T[L2].realm!==t.realm?2:1);if(L2>L){const k=L*1000+L2;pair.set(k,(pair.get(k)||0)+1)}}}
+    edge[i]=e;if(e===3&&((x+y)%2===0))t.coast.push([x,y]);}
+  for(const[k,c]of pair)if(c>=3){const a=Math.floor(k/1000),b=k%1000;T[a].adj.push(b);T[b].adj.push(a)}
+  // Abstand zur Grenze -> Plakettenposition
+  const dist=new Int16Array(N).fill(-1);let q=[];
+  for(let i=0;i<N;i++)if(lab[i]>=0&&edge[i]){dist[i]=0;q.push(i)}
+  for(let h=0;h<q.length;h++){const j=q[h],x=j%GW,y=(j/GW)|0;for(const k of [x>0?j-1:-1,x<GW-1?j+1:-1,y>0?j-GW:-1,y<GH-1?j+GW:-1])if(k>=0&&lab[k]>=0&&dist[k]<0){dist[k]=dist[j]+1;q.push(k)}}
+  T.forEach(t=>{t.mx=t.sx/t.n;t.my=t.sy/t.n;t.best=-1e9});
+  for(let i=0;i<N;i++){const L=lab[i];if(L<0)continue;const t=T[L],x=i%GW,y=(i/GW)|0,s=Math.min(dist[i],9)-.12*Math.hypot(x-t.mx,y-t.my);if(s>t.best){t.best=s;t.bx=x;t.by=y}}
+  // Wasser-Tiefe
+  const wd=new Int16Array(N).fill(99);q=[];
+  for(let i=0;i<N;i++){if(lab[i]>=0)continue;const x=i%GW,y=(i/GW)|0;for(const k of [x>0?i-1:-1,x<GW-1?i+1:-1,y>0?i-GW:-1,y<GH-1?i+GW:-1])if(k>=0&&lab[k]>=0){wd[i]=1;q.push(i);break}}
+  for(let h=0;h<q.length;h++){const j=q[h];if(wd[j]>=10)continue;const x=j%GW,y=(j/GW)|0;for(const k of [x>0?j-1:-1,x<GW-1?j+1:-1,y>0?j-GW:-1,y<GH-1?j+GW:-1])if(k>=0&&lab[k]<0&&wd[k]>wd[j]+1){wd[k]=wd[j]+1;q.push(k)}}
+  // Inseln + Seewege
+  const isl=new Int16Array(T.length).fill(-1);let ni=0;
+  T.forEach(t=>{if(isl[t.id]>=0)return;const st=[t.id];isl[t.id]=ni;while(st.length){const a=st.pop();for(const b of T[a].adj)if(isl[b]<0){isl[b]=ni;st.push(b)}}ni++});
+  const cand=[];
+  for(let a=0;a<T.length;a++)for(let b=a+1;b<T.length;b++){if(isl[a]===isl[b])continue;let bd=1e9,pa,pb;
+    for(const p of T[a].coast)for(const r of T[b].coast){const d=(p[0]-r[0])**2+(p[1]-r[1])**2;if(d<bd){bd=d;pa=p;pb=r}}
+    if(pa)cand.push({a,b,d:Math.sqrt(bd),pa,pb})}
+  cand.sort((x,y)=>x.d-y.d);
+  const uf=[...Array(ni).keys()],find=x=>uf[x]===x?x:(uf[x]=find(uf[x]));
+  const sea=[],linked=new Set();
+  for(const c of cand){const A=find(isl[c.a]),B=find(isl[c.b]);if(A!==B){uf[A]=B;sea.push(c);linked.add(Math.min(isl[c.a],isl[c.b])+'-'+Math.max(isl[c.a],isl[c.b]))}}
+  let extra=0;for(const c of cand){if(extra>=3||c.d>70)break;const key=Math.min(isl[c.a],isl[c.b])+'-'+Math.max(isl[c.a],isl[c.b]);if(linked.has(key))continue;linked.add(key);sea.push(c);extra++}
+  for(const c of sea){if(!T[c.a].adj.includes(c.b)){T[c.a].adj.push(c.b);T[c.b].adj.push(c.a)}}
+  T.forEach(t=>{delete t.coast;delete t.best});
+  let LAB=lab,SH=shade,ED=edge,WD=wd;
+  if(portrait){const W=GW,H=GH,tr=(a,C)=>{const b=new C(W*H);for(let y=0;y<H;y++)for(let x=0;x<W;x++)b[x*H+y]=a[y*W+x];return b};
+    LAB=tr(lab,Int16Array);SH=tr(shade,Float32Array);ED=tr(edge,Uint8Array);WD=tr(wd,Int16Array);
+    T.forEach(t=>{[t.bx,t.by]=[t.by,t.bx];[t.mx,t.my]=[t.my,t.mx]});sea.forEach(c=>{c.pa=[c.pa[1],c.pa[0]];c.pb=[c.pb[1],c.pb[0]]});GW=H;GH=W;}
+  const N2=GW*GH;
+  // Reiche
+  const realms=REALMS.map((r,i)=>{const ids=T.filter(t=>t.realm===i).map(t=>t.id);return{i,name:r.name,ids,bonus:Math.max(2,ids.length-2)}}).filter(r=>r.ids.length);
+  realms.forEach(r=>{let minY=1e9,maxY=0,sx=0;r.ids.forEach(id=>{sx+=T[id].bx});
+    for(let i=0;i<N2;i++){if(LAB[i]>=0&&T[LAB[i]].realm===r.i){const y=(i/GW)|0;if(y<minY)minY=y;if(y>maxY)maxY=y}}
+    r.lx=sx/r.ids.length;r.ly=minY+6;});
+  off.width=GW;off.height=GH;img=octx.createImageData(GW,GH);
+  return{seed,lab:LAB,shade:SH,edge:ED,wd:WD,T,realms,sea};
+}
+
+/* ================= Spielzustand ================= */
+let M=null,G=null,sel=-1,targets=[],busy=false,fx=null,soundOn=true,speed=1;
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const off=document.createElement('canvas');off.width=GW;off.height=GH;const octx=off.getContext('2d');let img=octx.createImageData(GW,GH);
+let view={s:1,ox:0,oy:0},base=1,cw=0,ch=0,dpr=1;
+
+function newGame(fac,opp,diff){
+  const seed=(Math.random()*1e9)|0,portrait=innerHeight>innerWidth*1.15;M=genMap(seed,portrait);
+  const order=[fac,...[0,1,2,3,4].filter(f=>f!==fac).sort(()=>rnd()-.5).slice(0,opp)];
+  const n=order.length;
+  G={seed,portrait,round:1,cur:0,phase:'reinforce',pool:0,diff,moved:false,asked:[],over:false,
+     players:order.map((f,i)=>({fac:f,name:FACTIONS[f].name,human:i===0,gold:i===0?30:DIFF[diff].gold,alive:true})),
+     rel:[...Array(n)].map(()=>Array(n).fill(0)),ally:[...Array(n)].map(()=>Array(n).fill(0)),
+     T:M.T.map(()=>({owner:0,troops:1,kn:0,dr:0,castle:0,mine:0,barr:0}))};
+  const ids=M.T.map(t=>t.id).sort(()=>rnd()-.5);
+  ids.forEach((id,k)=>G.T[id].owner=k%n);
+  for(let p=0;p<n;p++){const own=ids.filter(id=>G.T[id].owner===p);let extra=Math.max(8,40-own.length*2)-(p===0?0:0);
+    while(extra-->0)G.T[own[ri(own.length)]].troops++;}
+  beginHumanTurn(true);
+}
+
+/* ================= Regeln ================= */
+const own=p=>G.T.map((t,i)=>t.owner===p?i:-1).filter(i=>i>=0);
+const allied=(a,b)=>a!==b&&G.ally[a][b]>0;
+const enemyNbrs=(t,p)=>M.T[t].adj.filter(n=>G.T[n].owner!==p&&!allied(p,G.T[n].owner));
+function strength(p){let s=0;G.T.forEach(t=>{if(t.owner===p)s+=t.troops+3+(t.kn?2:0)+(t.dr?5:0)+(t.castle?2:0)});return G.players[p].alive?s:0}
+function leader(){let b=-1,bs=-1;G.players.forEach((P,i)=>{const s=strength(i);if(s>bs){bs=s;b=i}});return b}
+function income(p){const o=own(p);let tr=Math.max(3,Math.floor(o.length/3)),gold=3+Math.floor(o.length/2),bon=[];
+  for(const r of M.realms)if(r.ids.every(id=>G.T[id].owner===p)){tr+=r.bonus;bon.push(r.name)}
+  o.forEach(i=>{if(G.T[i].barr)tr+=2;if(G.T[i].mine)gold+=4});
+  if(!G.players[p].human)tr=Math.max(2,Math.round(tr*DIFF[G.diff].mult));
+  return{tr,gold,bon};}
+function attackTargets(t,p){const res=new Set(),ok=n=>{const o=G.T[n].owner;return o!==p&&!allied(p,o)};
+  for(const n of M.T[t].adj)if(ok(n))res.add(n);
+  if(G.T[t].dr)for(const n of M.T[t].adj)for(const m of M.T[n].adj)if(m!==t&&ok(m))res.add(m);
+  return[...res];}
+function connectedOwn(a,b,p){const seen=new Set([a]),st=[a];while(st.length){const x=st.pop();if(x===b)return true;for(const n of M.T[x].adj)if(!seen.has(n)&&G.T[n].owner===p){seen.add(n);st.push(n)}}return false}
+const roll=n=>[...Array(n)].map(()=>1+ri(6)).sort((a,b)=>b-a);
+function battleRound(f,t){const A=G.T[f],D=G.T[t],na=Math.min(3,A.troops-1),nd=Math.min(2,D.troops);
+  const a=roll(na),d=roll(nd),ae=a.slice(),de=d.slice();if(A.dr)ae[0]++;if(D.castle)de[0]++;
+  let la=0,ld=0;const res=[];
+  for(let i=0;i<Math.min(na,nd);i++){const w=ae[i]>de[i]||(ae[i]===de[i]&&A.kn);if(w)ld++;else la++;res.push(w)}
+  A.troops-=la;D.troops-=ld;return{a,d,ae,de,la,ld,na,res};}
+function relChange(a,b,v){if(a===b)return;G.rel[a][b]=G.rel[b][a]=Math.max(-100,Math.min(100,G.rel[a][b]+v))}
+function makeAlly(a,b,r=5){G.ally[a][b]=G.ally[b][a]=r;relChange(a,b,15)}
+function breakAlly(a,b){G.ally[a][b]=G.ally[b][a]=0;relChange(a,b,-50);G.players.forEach((P,i)=>{if(i!==a&&i!==b)relChange(a,i,-12)})}
+function conquer(f,t,n){const A=G.T[f],D=G.T[t],prev=D.owner,p=A.owner;
+  D.owner=p;D.troops=n;A.troops-=n;D.kn=A.kn;D.dr=A.dr;A.kn=0;A.dr=0;G.players[p].gold+=5;
+  if(own(prev).length===0){G.players[prev].alive=false;G.players[p].gold+=G.players[prev].gold;G.players[prev].gold=0;
+    G.players.forEach((P,i)=>{G.ally[prev][i]=G.ally[i][prev]=0});
+    tick(`💀 ${G.players[prev].name} wurde von ${G.players[p].name} besiegt!`,prev===0?'bad':'good');sfx('win');}
+  return prev;}
+function checkOver(){if(G.over)return true;const n=M.T.length,mine=own(0).length;
+  if(!G.players[0].alive){gameOver(false,'Dein Volk wurde besiegt.');return true}
+  const alive=G.players.filter(P=>P.alive).length;
+  if(alive===1||mine>=Math.ceil(n*.65)){gameOver(true,`Du beherrschst ${mine} von ${n} Gebieten!`);return true}
+  for(let p=1;p<G.players.length;p++)if(own(p).length>=Math.ceil(n*.75)){gameOver(false,`${G.players[p].name} beherrscht die Welt.`);return true}
+  return false;}
+
+/* ================= Zeichnen ================= */
+function paint(){const d=img.data,{lab,shade,edge,wd}=M,tset=new Set(targets),t0=performance.now()/400;
+  const cols=G.players.map(P=>FACTIONS[P.fac].color);
+  for(let i=0,N=GW*GH;i<N;i++){const L=lab[i],o=i*4;let r,g,b;
+    if(L<0){const w=wd[i],sh=shade[i];const k=Math.min(w,10)/10;r=30+(16-30)*k+sh*14;g=105+(48-105)*k+sh*18;b=150+(86-150)*k+sh*20;if(w===1){r+=40;g+=45;b+=40}}
+    else{const T=G.T[L],c=cols[T.owner],tn=REALMS[M.T[L].realm].tint;let f=.8+shade[i]*.38;
+      r=c[0]*.82+tn[0]*.18;g=c[1]*.82+tn[1]*.18;b=c[2]*.82+tn[2]*.18;
+      if(L===sel)f*=1.32;else if(tset.has(L)){const x=i%GW,y=(i/GW)|0;if((x+y)%7<3)f*=1.35}
+      const e=edge[i];if(e===1)f*=.6;else if(e===2)f*=.38;else if(e===3)f*=.55;
+      if(L===sel&&e)f=2.2;
+      r*=f;g*=f;b*=f;}
+    d[o]=r;d[o+1]=g;d[o+2]=b;d[o+3]=255;}
+  octx.putImageData(img,0,0);}
+function resize(){const w=document.getElementById('mapwrap');dpr=Math.min(2,window.devicePixelRatio||1);cw=w.clientWidth;ch=w.clientHeight;
+  cv.width=cw*dpr;cv.height=ch*dpr;base=Math.min(cw/GW,ch/GH);clampView();draw();}
+function fit(){view.s=1;clampView(true);draw()}
+function clampView(center){const mw=GW*base*view.s,mh=GH*base*view.s;
+  if(center||mw<=cw)view.ox=mw<=cw?(cw-mw)/2:Math.min(0,Math.max(cw-mw,view.ox));else view.ox=Math.min(0,Math.max(cw-mw,view.ox));
+  if(center||mh<=ch)view.oy=mh<=ch?(ch-mh)/2:Math.min(0,Math.max(ch-mh,view.oy));else view.oy=Math.min(0,Math.max(ch-mh,view.oy));}
+function zoomAt(px,py,s){s=Math.max(1,Math.min(5,s));view.ox=px-(px-view.ox)*s/view.s;view.oy=py-(py-view.oy)*s/view.s;view.s=s;clampView();draw()}
+const toScr=(x,y)=>{const k=base*view.s;return[view.ox+(x+.5)*k,view.oy+(y+.5)*k]};
+let drawQueued=false;
+function draw(){if(!M||!G)return;if(drawQueued)return;drawQueued=true;requestAnimationFrame(()=>{drawQueued=false;realDraw()})}
+function realDraw(){paint();const k=base*view.s;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#10304a';ctx.fillRect(0,0,cw,ch);
+  ctx.imageSmoothingEnabled=true;ctx.drawImage(off,view.ox,view.oy,GW*k,GH*k);
+  // Seewege
+  ctx.save();ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.strokeStyle='rgba(240,230,200,.75)';
+  for(const s of M.sea){const[a,b]=toScr(s.pa[0],s.pa[1]),[c,d]=toScr(s.pb[0],s.pb[1]);ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.stroke()}
+  ctx.restore();
+  // Reichsnamen
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font=`italic 800 ${Math.max(11,Math.min(18,k*4.2))}px Georgia,serif`;
+  for(const r of M.realms){const[x,y]=toScr(r.lx,r.ly);const pl=G.players.findIndex((P,i)=>r.ids.every(id=>G.T[id].owner===i));
+    const txt=`${r.name} +${r.bonus}`+(pl>=0?' 👑':'');ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.6)';ctx.strokeText(txt,x,y);ctx.fillStyle='rgba(245,225,160,.95)';ctx.fillText(txt,x,y)}
+  // Aktionspfeil
+  if(fx){const A=M.T[fx.from],B=M.T[fx.to],[x1,y1]=toScr(A.bx,A.by),[x2,y2]=toScr(B.bx,B.by);
+    ctx.save();ctx.strokeStyle=fx.col||'#fff';ctx.lineWidth=4;ctx.shadowColor='#000';ctx.shadowBlur=6;ctx.beginPath();ctx.moveTo(x1,y1);
+    const mx=(x1+x2)/2,my=(y1+y2)/2-30;ctx.quadraticCurveTo(mx,my,x2,y2);ctx.stroke();
+    const ang=Math.atan2(y2-my,x2-mx);ctx.fillStyle=fx.col||'#fff';ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-14*Math.cos(ang-.45),y2-14*Math.sin(ang-.45));ctx.lineTo(x2-14*Math.cos(ang+.45),y2-14*Math.sin(ang+.45));ctx.fill();ctx.restore()}
+  // Plaketten
+  const R=Math.max(10,Math.min(17,k*3.6)),showNames=k>=2.4;
+  M.T.forEach((mt,i)=>{const t=G.T[i],[x,y]=toScr(mt.bx,mt.by),c=FACTIONS[G.players[t.owner].fac].color;
+    if(showNames){ctx.font=`700 ${Math.min(13,k*3)}px system-ui`;ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.strokeText(mt.name,x,y-R-7);ctx.fillStyle='#fff';ctx.fillText(mt.name,x,y-R-7)}
+    ctx.beginPath();ctx.arc(x,y,R,0,7);ctx.fillStyle=`rgb(${c[0]*.55|0},${c[1]*.55|0},${c[2]*.55|0})`;ctx.fill();
+    ctx.lineWidth=i===sel?4:2;ctx.strokeStyle=i===sel?'#ffe27a':(targets.includes(i)?'#ff6b5b':'#fff');ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font=`900 ${R*1.05}px system-ui`;ctx.fillText(t.troops,x,y+1);
+    const ic=(t.castle?'🏰':'')+(t.mine?'💰':'')+(t.barr?'⛺':'')+(t.kn?'⚔️':'')+(t.dr?'🐉':'');
+    if(ic){ctx.font=`${Math.max(10,R*.75)}px system-ui`;ctx.fillText(ic,x,y+R+R*.55)}
+  });}
+
+/* ================= Eingabe ================= */
+const pts=new Map();let drag=null,moved=false,pinch=null;
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+  if(pts.size===1){drag={x:e.offsetX,y:e.offsetY,ox:view.ox,oy:view.oy};moved=false}
+  if(pts.size===2){const[a,b]=[...pts.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),s:view.s,cx:(a.x+b.x)/2,cy:(a.y+b.y)/2,ox:view.ox,oy:view.oy};moved=true}});
+cv.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+  if(pts.size===2&&pinch){const[a,b]=[...pts.values()],d=Math.hypot(a.x-b.x,a.y-b.y),s=Math.max(1,Math.min(5,pinch.s*d/pinch.d));
+    view.ox=pinch.cx-(pinch.cx-pinch.ox)*s/pinch.s;view.oy=pinch.cy-(pinch.cy-pinch.oy)*s/pinch.s;view.s=s;clampView();draw()}
+  else if(pts.size===1&&drag){const dx=e.offsetX-drag.x,dy=e.offsetY-drag.y;if(Math.hypot(dx,dy)>8)moved=true;if(moved){view.ox=drag.ox+dx;view.oy=drag.oy+dy;clampView();draw()}}});
+function up(e){if(!pts.has(e.pointerId))return;const single=pts.size===1;pts.delete(e.pointerId);if(pts.size<2)pinch=null;
+  if(single&&!moved)tapAt(e.offsetX,e.offsetY);if(pts.size===0)drag=null;}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',e=>{pts.delete(e.pointerId);pinch=null;drag=null});
+cv.addEventListener('wheel',e=>{e.preventDefault();zoomAt(e.offsetX,e.offsetY,view.s*(e.deltaY<0?1.2:1/1.2))},{passive:false});
+document.getElementById('zin').onclick=()=>zoomAt(cw/2,ch/2,view.s*1.4);
+document.getElementById('zout').onclick=()=>zoomAt(cw/2,ch/2,view.s/1.4);
+document.getElementById('zfit').onclick=fit;
+window.addEventListener('resize',resize);
+function tapAt(px,py){if(!M)return;const k=base*view.s;let best=-1,bd=22*22;
+  M.T.forEach((t,i)=>{const[x,y]=toScr(t.bx,t.by),d=(x-px)**2+(y-py)**2;if(d<bd){bd=d;best=i}});
+  if(best<0){const gx=Math.floor((px-view.ox)/k),gy=Math.floor((py-view.oy)/k);if(gx>=0&&gy>=0&&gx<GW&&gy<GH)best=M.lab[gy*GW+gx]}
+  if(best>=0)onTerritory(best);else{sel=-1;targets=[];updateUI()}}
+
+/* ================= Spieler-Zug ================= */
+function beginHumanTurn(first){G.cur=0;G.phase='reinforce';G.moved=false;G.asked=[];sel=-1;targets=[];
+  const inc=income(0);G.pool=inc.tr;G.players[0].gold+=first?0:inc.gold;
+  if(!first){tick(`Runde ${G.round}: +${inc.tr} Truppen, +${inc.gold} Gold`+(inc.bon.length?` (Reichsbonus: ${inc.bon.join(', ')})`:''),'good')}
+  save();updateUI();}
+function onTerritory(i){if(busy||G.over||G.cur!==0)return;const t=G.T[i],mt=M.T[i];
+  if(G.phase==='reinforce'){
+    if(t.owner===0){sel=i;targets=[];if(G.pool>0){t.troops++;G.pool--;sfx('place')}}
+    else{sel=-1;tick(`${mt.name} gehört ${G.players[t.owner].name}.`)}
+  }else if(G.phase==='attack'){
+    if(sel>=0&&targets.includes(i)){openBattle(sel,i);return}
+    if(t.owner===0){sel=i;targets=t.troops>=2?attackTargets(i,0):[];if(t.troops<2)tick('Zum Angreifen brauchst du mindestens 2 Truppen.');else if(!targets.length)tick('Von hier kannst du niemanden angreifen.')}
+    else if(allied(0,t.owner)){tick(`${G.players[t.owner].name} ist dein Verbündeter – kein Angriff möglich.`)}
+    else{sel=-1;targets=[];tick('Tippe zuerst auf eines deiner Gebiete.')}
+  }else if(G.phase==='move'){
+    if(G.moved){tick('Du hast diese Runde schon verschoben.');return}
+    if(sel>=0&&t.owner===0&&i!==sel&&targets.includes(i)){openMove(sel,i);return}
+    if(t.owner===0&&t.troops>=2){sel=i;targets=own(0).filter(j=>j!==i&&connectedOwn(i,j,0))}
+    else{sel=-1;targets=[];if(t.owner===0)tick('Hier ist nur 1 Truppe – nichts zu verschieben.')}
+  }
+  updateUI();}
+function updateUI(){if(!G)return;const P=G.players[0],F=FACTIONS[P.fac],c=F.color;
+  document.getElementById('who').innerHTML=`<span class="dot" style="background:rgb(${c})"></span>${F.em} ${P.name}`;
+  document.getElementById('stats').innerHTML=`<span>💰 ${P.gold}</span><span>🗺️ ${own(0).length}/${M.T.length}</span><span>🔄 Runde ${G.round}</span>`;
+  const pi=document.getElementById('phaseInfo'),ac=document.getElementById('actions');let h='',a='';
+  const sname=sel>=0?M.T[sel].name:'';
+  if(G.cur!==0){h=`⏳ <b>${G.players[G.cur].name}</b> ist am Zug …`;a=`<button class="btn" id="aSpeed">⏩ Tempo: ${['Normal','Schnell','Turbo'][speed-1]||'Normal'}</button>`}
+  else if(G.phase==='reinforce'){
+    h=`<b>1 · Verstärken</b> – noch <b>${G.pool}</b> Truppen. Tippe auf deine Gebiete.`+(sel>=0?` Gewählt: <b>${sname}</b>`:'');
+    a=`<button class="btn" id="aShop" ${sel<0?'disabled':''}>🛒 Bauen</button><button class="btn" id="a5" ${sel<0||G.pool<1?'disabled':''}>+5</button><button class="btn" id="aAll" ${sel<0||G.pool<1?'disabled':''}>Alle hier</button><button class="btn gold" id="aNext" ${G.pool>0?'disabled':''}>Angriff ➜</button>`;
+  }else if(G.phase==='attack'){
+    h=`<b>2 · Angreifen</b> – `+(sel>=0?(targets.length?`Wähle ein <span style="color:#ff8a7a">rot markiertes</span> Ziel neben <b>${sname}</b>.`:`Von <b>${sname}</b> aus geht kein Angriff.`):'Tippe auf ein eigenes Gebiet mit mind. 2 Truppen.');
+    a=`<button class="btn gold" id="aNext">Verschieben ➜</button>`;
+  }else if(G.phase==='move'){
+    h=`<b>3 · Verschieben</b> – `+(G.moved?'Erledigt. Beende deinen Zug.':sel>=0?`Wohin sollen Truppen von <b>${sname}</b>?`:'Einmal Truppen zwischen verbundenen Gebieten verschieben (optional).');
+    a=`<button class="btn red" id="aEnd">Zug beenden ✔</button>`;
+  }
+  pi.innerHTML=h;ac.innerHTML=a;
+  const on=(id,f)=>{const el=document.getElementById(id);if(el)el.onclick=f};
+  on('aShop',()=>openShop(sel));
+  on('a5',()=>{const n=Math.min(5,G.pool);G.T[sel].troops+=n;G.pool-=n;sfx('place');updateUI()});
+  on('aAll',()=>{G.T[sel].troops+=G.pool;G.pool=0;sfx('place');updateUI()});
+  on('aNext',()=>{if(G.phase==='reinforce'){G.phase='attack';tick('⚔️ Angriffsphase! Wähle ein eigenes Gebiet.')}else{G.phase='move'}sel=-1;targets=[];save();updateUI()});
+  on('aEnd',endHumanTurn);
+  on('aSpeed',()=>{speed=speed%3+1;updateUI()});
+  draw();}
+
+/* ================= Fenster (Sheets) ================= */
+const sheet=document.getElementById('sheet'),card=document.getElementById('card');
+function openSheet(html){card.innerHTML=html;sheet.classList.remove('hidden')}
+function closeSheet(){sheet.classList.add('hidden');card.innerHTML=''}
+sheet.addEventListener('pointerdown',e=>{if(e.target===sheet&&!sheet.dataset.lock)closeSheet()});
+const $=id=>document.getElementById(id);
+
+function openShop(i){const t=G.T[i],P=G.players[0];
+  let h=`<h2>🛒 Bauen in ${M.T[i].name}</h2><p>Dein Gold: <b>💰 ${P.gold}</b></p>`;
+  SHOP.forEach(s=>{const has=!s.repeat&&t[s.k];h+=`<div class="item"><div class="ic">${s.ic}</div><div class="tx"><b>${s.name} · ${s.cost} Gold</b>${s.txt}</div>
+    <button class="btn gold" data-k="${s.k}" ${has||P.gold<s.cost?'disabled':''}>${has?'✔ da':'Kaufen'}</button></div>`});
+  h+=`<button class="btn" id="sClose" style="width:100%;margin-top:6px">Schließen</button>`;
+  openSheet(h);$('sClose').onclick=closeSheet;
+  card.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const s=SHOP.find(x=>x.k===b.dataset.k);if(P.gold<s.cost)return;P.gold-=s.cost;
+    if(s.k==='merc')G.pool+=3;else t[s.k]=1;sfx('buy');tick(`${s.ic} ${s.name} in ${M.T[i].name} gekauft!`,'good');openShop(i);updateUI()});}
+
+function sideHTML(i){const t=G.T[i],P=G.players[t.owner],c=FACTIONS[P.fac].color;
+  const ic=(t.kn?'⚔️':'')+(t.dr?'🐉':'')+(t.castle?'🏰':'');
+  return`<div class="side" style="border:2px solid rgb(${c})"><span class="big" id="tr${i}">${t.troops}</span>${M.T[i].name}<br><span class="small">${P.name} ${ic}</span></div>`}
+function diceHTML(r,rolling){if(!r)return'';const ae=r.ae,de=r.de;let h='';
+  r.a.forEach((v,k)=>{const lose=!rolling&&k<r.res.length&&!r.res[k];h+=`<div class="die a ${rolling?'roll':''} ${lose?'lose':''}">${rolling?1+ri(6):v}${!rolling&&ae[k]!==v?'<sup>+1</sup>':''}</div>`});
+  h+='<span style="font-weight:900;margin:0 4px">VS</span>';
+  r.d.forEach((v,k)=>{const lose=!rolling&&k<r.res.length&&r.res[k];h+=`<div class="die d ${rolling?'roll':''} ${lose?'lose':''}">${rolling?1+ri(6):v}${!rolling&&de[k]!==v?'<sup>+1</sup>':''}</div>`});return h}
+function openBattle(f,t){const def=G.T[t].owner;relChange(0,def,-6);sheet.dataset.lock='1';
+  const render=(r,msg)=>{openSheet(`<h2>⚔️ Schlacht um ${M.T[t].name}</h2>
+    <div class="vs">${sideHTML(f)}<div style="font-size:26px">➜</div>${sideHTML(t)}</div>
+    <div class="dice" id="dice">${diceHTML(r)}</div><div class="result" id="res">${msg||'Bereit zum Angriff!'}</div>
+    <p class="small">Rot = du (max. 3 Würfel), Weiß = Verteidiger (max. 2). Höhere Augen gewinnen, Gleichstand → Verteidiger${G.T[f].kn?' – aber dein ⚔️ Ritter gewinnt Gleichstände!':''}.</p>
+    <div class="row"><button class="btn red" id="bRoll">🎲 Angreifen</button><button class="btn gold" id="bBlitz">⚡ Blitzangriff</button><button class="btn" id="bBack">Rückzug</button></div>`);
+    const dis=G.T[f].troops<2;$('bRoll').disabled=dis;$('bBlitz').disabled=dis;
+    $('bRoll').onclick=()=>doRound(false);$('bBlitz').onclick=()=>doRound(true);$('bBack').onclick=()=>{delete sheet.dataset.lock;closeSheet();sel=f;targets=G.T[f].troops>=2?attackTargets(f,0):[];updateUI()};};
+  let running=false;
+  async function doRound(blitz){if(running)return;running=true;['bRoll','bBlitz','bBack'].forEach(id=>$(id).disabled=true);
+    let r;do{r=battleRound(f,t);const fake={...r};$('dice').innerHTML=diceHTML(fake,true);sfx('dice');await sleep(blitz?140:420);
+      $('dice').innerHTML=diceHTML(r);$('tr'+f).textContent=G.T[f].troops;$('tr'+t).textContent=G.T[t].troops;
+      $('res').innerHTML=`Du verlierst <b>${r.la}</b>, Gegner verliert <b>${r.ld}</b>`;draw();if(blitz)await sleep(160);}
+    while(blitz&&G.T[t].troops>0&&G.T[f].troops>1);
+    running=false;
+    if(G.T[t].troops<=0){sfx('conquer');askMoveIn(f,t,r.na)}else render(r,G.T[f].troops<2?'Deine Armee ist erschöpft!':`Du verlierst <b>${r.la}</b>, Gegner verliert <b>${r.ld}</b>`);}
+  render(null);}
+function askMoveIn(f,t,minN){const max=G.T[f].troops-1,min=Math.min(minN,max),def=Math.max(min,enemyNbrs(f,0).length?Math.ceil(max/2):max);
+  openSheet(`<h2>🏆 ${M.T[t].name} erobert!</h2><p>+5 Gold Beute${G.T[f].kn||G.T[f].dr?' · Deine Spezialeinheiten ziehen mit ein':''}${G.T[t].castle||G.T[t].mine||G.T[t].barr?' · Gebäude erbeutet!':''}</p>
+   <p>Wie viele Truppen ziehen nach <b>${M.T[t].name}</b>?</p><div class="row"><input type="range" id="mv" min="${min}" max="${max}" value="${def}"><b id="mvv" style="min-width:32px;text-align:center;font-size:20px">${def}</b></div>
+   <button class="btn gold" id="mvOk" style="width:100%">Einmarschieren</button>`);
+  $('mv').oninput=e=>$('mvv').textContent=e.target.value;
+  $('mvOk').onclick=()=>{const n=+$('mv').value,prev=G.T[t].owner;conquer(f,t,n);delete sheet.dataset.lock;closeSheet();tick(`🏆 ${M.T[t].name} erobert!`,'good');
+    sel=t;targets=G.T[t].troops>=2?attackTargets(t,0):[];save();updateUI();checkOver();};}
+function openMove(a,b){const max=G.T[a].troops-1,A=G.T[a],B=G.T[b];
+  openSheet(`<h2>🚶 Truppen verschieben</h2><p>Von <b>${M.T[a].name}</b> nach <b>${M.T[b].name}</b></p>
+   <div class="row"><input type="range" id="mv" min="1" max="${max}" value="${max}"><b id="mvv" style="min-width:32px;text-align:center;font-size:20px">${max}</b></div>
+   ${A.kn&&!B.kn?'<label class="row"><input type="checkbox" id="mKn" checked> ⚔️ Ritter mitnehmen</label>':''}
+   ${A.dr&&!B.dr?'<label class="row"><input type="checkbox" id="mDr" checked> 🐉 Drache mitnehmen</label>':''}
+   <div class="row"><button class="btn gold" id="mvOk">Verschieben</button><button class="btn" id="mvNo">Abbrechen</button></div>`);
+  $('mv').oninput=e=>$('mvv').textContent=e.target.value;$('mvNo').onclick=closeSheet;
+  $('mvOk').onclick=()=>{const n=+$('mv').value;A.troops-=n;B.troops+=n;if($('mKn')&&$('mKn').checked){B.kn=1;A.kn=0}if($('mDr')&&$('mDr').checked){B.dr=1;A.dr=0}
+    G.moved=true;sel=-1;targets=[];closeSheet();sfx('place');save();updateUI()};}
+
+function openDiplo(){if(!G)return;const L=leader();let h=`<h2>🤝 Diplomatie</h2><p class="small">Verbündete greifen sich nicht an. Ein Bündnis hält 5 Runden. Wer ein Bündnis bricht, gilt bei allen als Verräter.</p>`;
+  G.players.forEach((P,i)=>{if(i===0)return;const F=FACTIONS[P.fac],rel=G.rel[0][i],al=G.ally[0][i];
+    const relTxt=rel>40?'freundlich':rel>5?'neutral-gut':rel>-20?'misstrauisch':'feindselig';
+    const pct=(rel+100)/2,col=rel>0?'#5bd27a':'#e0574a';
+    const allies=G.players.map((Q,j)=>j!==i&&j!==0&&G.ally[i][j]>0?Q.name:null).filter(Boolean);
+    h+=`<div class="item"><div class="ic">${F.em}</div><div class="tx"><b style="color:rgb(${F.color})">${P.name}${P.alive?'':' 💀'}${i===L?' 👑':''}</b>
+      ${P.alive?`${own(i).length} Gebiete · Stärke ${strength(i)} · ${al?`<b style="display:inline;color:#5bd27a">Bündnis (${al} Runden)</b>`:relTxt}${allies.length?`<br>verbündet mit: ${allies.join(', ')}`:''}
+      <div class="bar"><i style="width:${pct}%;background:${col}"></i></div>`:'besiegt'}</div>
+      ${P.alive&&G.cur===0&&!busy?(al?`<button class="btn red" data-b="${i}">Brechen</button>`:`<div style="display:flex;flex-direction:column;gap:4px"><button class="btn green" data-p="${i}" ${G.asked.includes(i)?'disabled':''}>Bündnis</button><button class="btn" data-g="${i}" ${G.players[0].gold<20?'disabled':''}>🎁 20 Gold</button></div>`):''}</div>`});
+  h+=`<button class="btn" id="dClose" style="width:100%">Schließen</button>`;openSheet(h);$('dClose').onclick=closeSheet;
+  card.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p;G.asked.push(i);
+    const myS=strength(0),hisS=strength(i),L=leader();let sc=G.rel[0][i]+rnd()*40;
+    if(L!==0&&L!==i)sc+=25;if(L===0)sc-=30;if(myS>hisS)sc+=10;if(G.diff===2)sc-=10;
+    if(sc>35){makeAlly(0,i);sfx('win');tick(`🤝 ${G.players[i].name} nimmt dein Bündnis an!`,'good')}else{relChange(0,i,-3);tick(`❌ ${G.players[i].name} lehnt ab.`,'bad')}
+    save();openDiplo();updateUI()});
+  card.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const i=+b.dataset.g;G.players[0].gold-=20;G.players[i].gold+=20;relChange(0,i,20);sfx('buy');tick(`🎁 ${G.players[i].name} freut sich über dein Geschenk.`,'good');openDiplo();updateUI()});
+  card.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>{const i=+b.dataset.b;breakAlly(0,i);tick(`🗡️ Du hast das Bündnis mit ${G.players[i].name} gebrochen!`,'bad');save();openDiplo();updateUI()});}
+function askHuman(text,em){return new Promise(res=>{sheet.dataset.lock='1';openSheet(`<h2>${em||'📜'} Botschaft</h2><p style="font-size:16px">${text}</p>
+  <div class="row"><button class="btn green" id="qY">Annehmen</button><button class="btn red" id="qN">Ablehnen</button></div>`);
+  $('qY').onclick=()=>{delete sheet.dataset.lock;closeSheet();res(true)};$('qN').onclick=()=>{delete sheet.dataset.lock;closeSheet();res(false)}})}
+
+/* ================= Computer-Gegner ================= */
+const sp=()=>[0,520,200,40][speed];
+function endHumanTurn(){if(busy)return;sel=-1;targets=[];busy=true;updateUI();runAIs()}
+async function runAIs(){
+  for(let p=1;p<G.players.length;p++){if(G.over)return;if(!G.players[p].alive)continue;G.cur=p;updateUI();await aiTurn(p);if(checkOver())return}
+  G.round++;
+  for(let a=0;a<G.players.length;a++)for(let b=a+1;b<G.players.length;b++){
+    if(G.ally[a][b]>0){G.ally[a][b]--;G.ally[b][a]--;if(G.ally[a][b]===0&&(a===0))tick(`⌛ Dein Bündnis mit ${G.players[b].name} ist ausgelaufen.`)}
+    G.rel[a][b]=G.rel[b][a]=Math.round(G.rel[a][b]*.95);}
+  busy=false;fx=null;beginHumanTurn(false);}
+async function aiTurn(p){const P=G.players[p],inc=income(p);P.gold+=inc.gold;let pool=inc.tr;
+  tick(`${FACTIONS[P.fac].em} ${P.name} ist am Zug`);await sleep(sp());
+  await aiDiplomacy(p);
+  pool+=aiBuy(p);
+  aiReinforce(p,pool);draw();await sleep(sp());
+  const thr=DIFF[G.diff].thr,col=`rgb(${FACTIONS[P.fac].color})`;
+  for(let k=0;k<14;k++){const mv=aiPickAttack(p,thr);if(!mv)break;const def=G.T[mv.t].owner;
+    fx={from:mv.f,to:mv.t,col};draw();await sleep(sp()*1.2);relChange(p,def,-6);
+    let r;do{r=battleRound(mv.f,mv.t)}while(G.T[mv.t].troops>0&&G.T[mv.f].troops>1&&G.T[mv.f].troops>=G.T[mv.t].troops*.8);
+    if(G.T[mv.t].troops<=0){const A=G.T[mv.f],mx=A.troops-1,n=Math.max(Math.min(r.na,mx),enemyNbrs(mv.f,p).length?Math.ceil(mx/2):mx);
+      conquer(mv.f,mv.t,n);sfx(def===0?'lose':'hit');if(def===0)tick(`🔥 ${P.name} erobert dein Gebiet ${M.T[mv.t].name}!`,'bad');
+      if(checkOver()){fx=null;draw();return}}
+    else if(def===0)tick(`🛡️ ${M.T[mv.t].name} hat den Angriff von ${P.name} abgewehrt!`,'good');
+    draw();await sleep(sp());}
+  fx=null;aiFortify(p);draw();await sleep(sp()*.5);}
+function aiBuy(p){const P=G.players[p],o=own(p);let extra=0;if(!o.length)return 0;
+  const front=o.filter(i=>enemyNbrs(i,p).length),inner=o.filter(i=>!enemyNbrs(i,p).length);
+  const threat=i=>enemyNbrs(i,p).reduce((s,n)=>s+G.T[n].troops,0);
+  for(let k=0;k<4;k++){const mines=o.filter(i=>G.T[i].mine).length,barr=o.filter(i=>G.T[i].barr).length;
+    const strong=front.slice().sort((a,b)=>G.T[b].troops-G.T[a].troops)[0];
+    const danger=front.filter(i=>!G.T[i].castle).sort((a,b)=>threat(b)-threat(a))[0];
+    if(P.gold>=35&&mines<2&&G.round>1){const c=(inner.length?inner:o).find(i=>!G.T[i].mine);if(c!==undefined){G.T[c].mine=1;P.gold-=35;continue}}
+    if(P.gold>=40&&danger!==undefined&&threat(danger)>G.T[danger].troops*1.3){G.T[danger].castle=1;P.gold-=40;continue}
+    if(P.gold>=60&&strong!==undefined&&!o.some(i=>G.T[i].dr)&&rnd()<.6){G.T[strong].dr=1;P.gold-=60;continue}
+    if(P.gold>=25&&strong!==undefined&&!G.T[strong].kn){G.T[strong].kn=1;P.gold-=25;continue}
+    if(P.gold>=45&&barr<2&&rnd()<.5){const c=(inner.length?inner:o).find(i=>!G.T[i].barr);if(c!==undefined){G.T[c].barr=1;P.gold-=45;continue}}
+    if(P.gold>=15){P.gold-=15;extra+=3;continue}
+    break;}
+  return extra;}
+function realmShare(r,p){return r.ids.filter(id=>G.T[id].owner===p).length/r.ids.length}
+function aiReinforce(p,pool){const o=own(p);let front=o.filter(i=>enemyNbrs(i,p).length);if(!front.length)front=o;if(!front.length)return;
+  const score=i=>{const en=enemyNbrs(i,p);let th=0,opp=-99,foc=0;
+    for(const n of en){th+=G.T[n].troops;opp=Math.max(opp,G.T[i].troops-G.T[n].troops);if(realmShare(M.realms.find(r=>r.ids.includes(n)),p)>=.5)foc=.8}
+    return th/(G.T[i].troops+1)+(opp>-4?.6:0)+foc+rnd()*.3;};
+  for(let k=0;k<pool;k++){let b=front[0],bs=-1e9;for(const i of front){const s=score(i);if(s>bs){bs=s;b=i}}G.T[b].troops++}}
+function aiPickAttack(p,thr){let best=null,bs=0;const L=leader();
+  for(const f of own(p)){const A=G.T[f];if(A.troops<3)continue;
+    for(const t of attackTargets(f,p)){const D=G.T[t],dv=D.troops+(D.castle?1.5:0);let ratio=(A.troops-1)/dv;if(A.dr)ratio*=1.15;if(A.kn)ratio*=1.1;
+      if(ratio<thr)continue;const r=M.realms.find(r=>r.ids.includes(t));let v=ratio+realmShare(r,p)*1.2;
+      if(D.owner===L&&L!==p)v+=.4;if(D.owner===0&&G.diff===0)v-=.4;if(D.mine||D.barr)v+=.3;
+      if(v>bs){bs=v;best={f,t}}}}
+  return best;}
+function aiFortify(p){const o=own(p);const inner=o.filter(i=>!enemyNbrs(i,p).length&&G.T[i].troops>1).sort((a,b)=>G.T[b].troops-G.T[a].troops);
+  if(!inner.length)return;const src=inner[0];
+  const dist=new Map(),q=[];o.forEach(i=>{if(enemyNbrs(i,p).length){dist.set(i,0);q.push(i)}});
+  for(let h=0;h<q.length;h++){const x=q[h];for(const n of M.T[x].adj)if(G.T[n].owner===p&&!dist.has(n)){dist.set(n,dist.get(x)+1);q.push(n)}}
+  if(!dist.has(src))return;let best=-1,bd=1e9;for(const n of M.T[src].adj)if(G.T[n].owner===p&&dist.has(n)&&dist.get(n)<bd){bd=dist.get(n);best=n}
+  if(best>=0&&bd<dist.get(src)){const n=G.T[src].troops-1;G.T[src].troops-=n;G.T[best].troops+=n}}
+async function aiDiplomacy(p){const L=leader(),n=G.players.length;
+  for(let q=0;q<n;q++){if(q===p||!G.players[q].alive)continue;
+    if(allied(p,q)&&q===L&&strength(q)>strength(p)*1.7&&rnd()<.15){breakAlly(p,q);tick(`🗡️ ${G.players[p].name} bricht das Bündnis mit ${G.players[q].name}!`,q===0?'bad':'');return}}
+  for(let q=0;q<n;q++){if(q===p||!G.players[q].alive||allied(p,q))continue;
+    if(q===0){if(rnd()<.14&&G.rel[p][0]>=-5&&L!==p&&(L!==0||G.rel[p][0]>35)){
+        busy=true;const ok=await askHuman(`<b>${G.players[p].name}</b> ${FACTIONS[G.players[p].fac].em} bietet dir ein Bündnis für 5 Runden an. Ihr greift euch dann nicht an.`,'🤝');
+        if(ok){makeAlly(p,0);tick(`🤝 Bündnis mit ${G.players[p].name} geschlossen!`,'good');sfx('win')}else{relChange(p,0,-8);tick(`Du hast ${G.players[p].name} abgewiesen.`)}return}}
+    else if(L!==p&&L!==q&&G.rel[p][q]>-20&&rnd()<.1){makeAlly(p,q);tick(`🤝 ${G.players[p].name} und ${G.players[q].name} schließen ein Bündnis!`);return}}}
+
+/* ================= Ticker, Sound, Speichern ================= */
+function tick(msg,cls){const el=document.createElement('div');el.className='tick '+(cls||'');el.innerHTML=msg;const tk=$('ticker');tk.appendChild(el);while(tk.children.length>4)tk.firstChild.remove();setTimeout(()=>el.remove(),7000)}
+let AC=null;
+function sfx(type){if(!soundOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime;
+  const tone=(f,d,w='square',v=.06,dl=0)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=w;o.frequency.setValueAtTime(f,t+dl);g.gain.setValueAtTime(v,t+dl);g.gain.exponentialRampToValueAtTime(.0001,t+dl+d);o.connect(g).connect(AC.destination);o.start(t+dl);o.stop(t+dl+d)};
+  if(type==='dice'){for(let k=0;k<4;k++)tone(200+rnd()*300,.05,'square',.04,k*.04)}
+  else if(type==='place')tone(520,.08,'triangle',.08);
+  else if(type==='buy'){tone(660,.08,'triangle',.08);tone(990,.12,'triangle',.08,.08)}
+  else if(type==='conquer'){[392,523,659,784].forEach((f,k)=>tone(f,.18,'sawtooth',.05,k*.09))}
+  else if(type==='win'){[523,659,784,1046].forEach((f,k)=>tone(f,.3,'triangle',.07,k*.12))}
+  else if(type==='hit')tone(160,.15,'sawtooth',.04);
+  else if(type==='lose'){[392,330,262].forEach((f,k)=>tone(f,.2,'sawtooth',.05,k*.12))}
+}catch(e){}}
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(G))}catch(e){}}
+function load(){try{const s=localStorage.getItem(SAVE);if(!s)return false;const g=JSON.parse(s);if(!g||g.over)return false;G=g;M=genMap(G.seed,!!G.portrait);if(M.T.length!==G.T.length)return false;return true}catch(e){return false}}
+function hasSave(){try{const s=localStorage.getItem(SAVE);return !!s&&!JSON.parse(s).over}catch(e){return false}}
+
+function gameOver(win,txt){G.over=true;save();busy=false;sfx(win?'win':'lose');sheet.dataset.lock='1';
+  openSheet(`<div style="text-align:center;font-size:64px">${win?'👑':'💀'}</div><h2 style="text-align:center">${win?'SIEG! Du bist Herrscher von Aetheria!':'Niederlage …'}</h2>
+  <p style="text-align:center">${txt}<br>Runde ${G.round}</p><button class="btn gold" id="goNew" style="width:100%">Neues Spiel</button>`);
+  $('goNew').onclick=()=>{delete sheet.dataset.lock;closeSheet();showStart()};}
+
+/* ================= Menü & Start ================= */
+const HELP=`<h2>📜 So geht's</h2>
+<p><b>Ziel:</b> Erobere 65 % aller Gebiete oder besiege alle anderen Völker.</p>
+<ul><li><b>1 · Verstärken:</b> Zu Rundenbeginn bekommst du Truppen und Gold. Tippe auf deine Gebiete, um Truppen zu setzen. Mit 🛒 kaufst du Einheiten und Gebäude.</li>
+<li><b>2 · Angreifen:</b> Tippe dein Gebiet (mind. 2 Truppen), dann ein rot markiertes Nachbargebiet. Würfelkampf wie bei Risiko.</li>
+<li><b>3 · Verschieben:</b> Einmal pro Runde Truppen zwischen verbundenen eigenen Gebieten bewegen.</li>
+<li><b>Reiche:</b> Besitzt du ein ganzes Reich (z. B. Frostlande), gibt's jede Runde Bonustruppen 👑.</li>
+<li><b>Seewege</b> (gestrichelt) verbinden die Inseln.</li>
+<li>⚔️ <b>Ritter</b>: Gleichstand gewinnst du · 🐉 <b>Drache</b>: +1 Angriff, fliegt 2 Felder · 🏰 <b>Burg</b>: +1 Verteidigung · 💰 <b>Mine</b>: +4 Gold · ⛺ <b>Kaserne</b>: +2 Truppen</li>
+<li>🤝 <b>Diplomatie:</b> Bündnisse schützen vor Angriffen. Geschenke machen Freunde. Verrat merkt sich jeder!</li>
+<li>Eroberst du ein Gebiet, gehören dir auch die Gebäude dort.</li></ul>`;
+function openMenu(){openSheet(`<h2>☰ Menü</h2>
+  <button class="btn" id="mHelp" style="width:100%;margin:4px 0">📜 Spielregeln</button>
+  <button class="btn" id="mSound" style="width:100%;margin:4px 0">${soundOn?'🔊 Ton an':'🔇 Ton aus'}</button>
+  <button class="btn" id="mSpeed" style="width:100%;margin:4px 0">⏩ Gegner-Tempo: ${['','Normal','Schnell','Turbo'][speed]}</button>
+  <button class="btn red" id="mNew" style="width:100%;margin:4px 0">🗺️ Zurück zum Start</button>
+  <p class="small">Das Spiel speichert automatisch auf diesem Gerät.</p>
+  <button class="btn" id="mClose" style="width:100%">Schließen</button>`);
+  $('mHelp').onclick=()=>{openSheet(HELP+'<button class="btn" id="hc" style="width:100%">Schließen</button>');$('hc').onclick=closeSheet};
+  $('mSound').onclick=()=>{soundOn=!soundOn;openMenu()};$('mSpeed').onclick=()=>{speed=speed%3+1;openMenu();updateUI()};
+  $('mNew').onclick=()=>{if(busy){tick('Warte, bis die Gegner fertig sind.');return}closeSheet();showStart()};$('mClose').onclick=closeSheet;}
+$('bMenu').onclick=openMenu;$('bDip').onclick=openDiplo;
+
+let pick={fac:0,opp:3,diff:1};
+function showStart(){$('start').classList.remove('hidden');$('bCont').classList.toggle('hidden',!hasSave());
+  $('facs').innerHTML=FACTIONS.map((F,i)=>`<div class="fac ${i===pick.fac?'on':''}" data-f="${i}"><span class="em">${F.em}</span><span class="dot" style="background:rgb(${F.color})"></span>${F.name}</div>`).join('');
+  $('facs').querySelectorAll('.fac').forEach(el=>el.onclick=()=>{pick.fac=+el.dataset.f;showStart()});}
+function seg(id,key){$(id).querySelectorAll('.btn').forEach(b=>b.onclick=()=>{pick[key]=+b.dataset.v;$(id).querySelectorAll('.btn').forEach(x=>x.classList.toggle('on',x===b))})}
+seg('segOpp','opp');seg('segDiff','diff');
+$('bNew').onclick=()=>{$('start').classList.add('hidden');newGame(pick.fac,pick.opp,pick.diff);resize();fit();sfx('win');tick('🐉 Willkommen in Aetheria! Setze deine Truppen.','good')};
+$('bCont').onclick=()=>{if(load()){$('start').classList.add('hidden');busy=false;sel=-1;targets=[];
+  if(G.cur!==0){G.round++;beginHumanTurn(false)}resize();fit();updateUI();tick('Spielstand geladen.','good')}};
+$('bHelp').onclick=()=>{openSheet(HELP+'<button class="btn" id="hc" style="width:100%">Los geht\'s!</button>');$('hc').onclick=closeSheet};
+showStart();
+</script>
+</body>
+</html>
