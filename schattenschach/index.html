@@ -118,7 +118,7 @@ table.log td:first-child{color:var(--muted);width:30px}
   <div class="lbl">Du spielst …</div>
   <div class="seg" id="segC"><button class="btn on" data-v="b">Nevermore<br><span class="sm">(Schwarz)</span></button><button class="btn" data-v="w">Jericho<br><span class="sm">(Weiß)</span></button><button class="btn" data-v="r">Zufall</button></div>
   <div class="lbl">Wie stark spielt der Computer?</div>
-  <div class="seg" id="segD"><button class="btn" data-v="easy">🕯️ Anfänger</button><button class="btn on" data-v="normal">🦇 Normal</button><button class="btn" data-v="pro">💀 Profi</button></div>
+  <div class="seg" id="segD"><button class="btn" data-v="easy">🕯️<br>Anfänger</button><button class="btn on" data-v="normal">🦇<br>Normal</button><button class="btn" data-v="strong">🐺<br>Stark</button><button class="btn" data-v="pro">💀<br>Profi</button></div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
     <button class="btn prim" id="bAI" style="font-size:20px;min-height:54px">🤖 Gegen den Computer</button>
     <button class="btn hidden" id="bCont">▶️ Weiterspielen</button>
@@ -225,8 +225,8 @@ function negamax(S,d,a,bt,ply){if((++AI.nodes&1023)===0&&Date.now()>AI.deadline)
   if(d<=0)return quiesce(S,a,bt,0);
   let best=-Infinity;for(const m of order(ms)){const v=-negamax(make(S,m),d-1,-bt,-a,ply+1);if(AI.stop)return 0;if(v>best)best=v;if(v>a)a=v;if(a>=bt)break}return best}
 function think(S,diff){const ms=legal(S);if(ms.length===1)return ms[0];
-  if(diff==='easy'&&Math.random()<.3)return ms[Math.floor(Math.random()*ms.length)];
-  const maxD=diff==='easy'?1:diff==='normal'?2:6,budget=diff==='pro'?1600:1200,noise=diff==='easy'?90:diff==='normal'?15:0;
+  const rnd={easy:.3,normal:.12}[diff]||0;if(Math.random()<rnd)return ms[Math.floor(Math.random()*ms.length)];
+  const maxD={easy:1,normal:1,strong:2}[diff]||6,budget=diff==='pro'?1600:1200,noise={easy:90,normal:40,strong:15}[diff]||0;
   AI={deadline:Date.now()+budget,nodes:0,stop:false};let bestM=ms[0],ordered=order(ms.slice());
   for(let d=1;d<=maxD;d++){let a=-Infinity,cur=null;const scores=[];
     for(const m of ordered){let v=noise?-negamax(make(S,m),d-1,-Infinity,Infinity,1):-negamax(make(S,m),d-1,-Infinity,-a,1);
@@ -338,6 +338,7 @@ const RULES=`<h3>So wird gespielt</h3><ul>
 <li>Rochade, Schlagen im Vorbeigehen und Bauernverwandlung sind dabei.</li>
 <li>Steht dein König im Schach, glüht sein Feld rot.</li>
 <li>Gewonnen hat, wer den gegnerischen König mattsetzt. Patt, dreimal dieselbe Stellung oder zu wenig Material heißt Remis.</li>
+<li>🎚️ Computer-Stärke: Anfänger macht viele Fehler, Normal ab und zu, Stark denkt zwei Züge voraus, Profi rechnet am tiefsten. Umstellen geht auch mitten in der Partie über das Menü ☰.</li>
 <li>🌐 Online: Raum erstellen, Link an einen Freund schicken – jeder spielt auf seinem Gerät.</li></ul>
 <p class="sm">Fan-Projekt ohne Verbindung zur Serie „Wednesday“ oder zu Netflix. Die Figuren sind selbst gezeichnet, nur die Namen erinnern an die Serie.</p>`;
 function showCast(){openSheet(`<h2>Die Besetzung</h2>${castHTML()}${RULES}<button class="btn" id="cc" style="width:100%;margin-top:8px">Schließen</button>`);$('cc').onclick=closeSheet}
@@ -348,7 +349,7 @@ function showOver(){const o=G.over;let win=null;if(o.win)win=G.mode==='local'?nu
    <div style="display:flex;gap:8px"><button class="btn prim" id="oA">${G.mode==='online'?'🔁 Revanche':'🔁 Nochmal'}</button><button class="btn" id="oB">Brett ansehen</button></div>`);
   $('oA').onclick=()=>{closeSheet();const e=$(G.mode==='online'?'aRe':'aNew');e&&e.click()};$('oB').onclick=closeSheet;
   if(win!==false)sfx('win')}
-const DIFFN={easy:'Anfänger',normal:'Normal',pro:'Profi'};
+const DIFFN={easy:'Anfänger',normal:'Normal',strong:'Stark',pro:'Profi'};
 function openMenu(){openSheet(`<h2>Menü</h2>
   <button class="btn" id="mCast" style="width:100%;margin:4px 0">👥 Besetzung &amp; Regeln</button>
   <button class="btn" id="mLog" style="width:100%;margin:4px 0" ${G?'':'disabled'}>📜 Bisherige Züge</button>
@@ -357,7 +358,7 @@ function openMenu(){openSheet(`<h2>Menü</h2>
   <button class="btn red" id="mHome" style="width:100%;margin:4px 0">🏠 Zurück zum Start</button>
   <button class="btn" id="mClose" style="width:100%">Schließen</button>`);
   $('mCast').onclick=showCast;$('mLog').onclick=()=>G&&showLog();$('mSound').onclick=()=>{soundOn=!soundOn;openMenu()};
-  $('mDiff').onclick=()=>{if(!G||G.mode!=='ai')return;const o=['easy','normal','pro'];G.diff=o[(o.indexOf(G.diff)+1)%3];pick.diff=G.diff;try{localStorage.setItem('ss_diff',G.diff)}catch(e){}save();render();openMenu()};
+  $('mDiff').onclick=()=>{if(!G||G.mode!=='ai')return;const o=['easy','normal','strong','pro'];G.diff=o[(o.indexOf(G.diff)+1)%4];pick.diff=G.diff;try{localStorage.setItem('ss_diff',G.diff)}catch(e){}save();render();openMenu()};
   $('mHome').onclick=()=>{closeSheet();netReset();showStart()};$('mClose').onclick=closeSheet}
 $('bMenu').onclick=openMenu;$('bCast').onclick=showCast;
 
