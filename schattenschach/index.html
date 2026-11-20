@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a090c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Schattenschach – Nevermore gegen Jericho</title>
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css?family=unifrakturcook:700|cormorant-garamond:500,600,700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--ink:#e9e4ec;--muted:#9b93a3;--line:#3b3442;--accent:#b49be0;--blood:#b3263a;--light:#4b4552;--dark:#17141b}
+html,body{margin:0;height:100%;background:#09080b;color:var(--ink);font-family:"Cormorant Garamond",Georgia,serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+body{background:radial-gradient(ellipse at 50% 0%,#231c2b 0%,#0d0b10 55%,#060507 100%)}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 20% 110%,#ffffff0d,transparent 50%),radial-gradient(ellipse at 90% 100%,#ffffff08,transparent 45%);animation:fog 18s ease-in-out infinite alternate}
+@keyframes fog{to{transform:translateX(-4%)}}
+#app{display:flex;flex-direction:column;height:100%;height:100dvh;max-width:620px;margin:0 auto;padding:0 8px}
+header{display:flex;align-items:center;gap:8px;padding:8px 2px;padding-top:max(8px,env(safe-area-inset-top));border-bottom:1px solid var(--line)}
+header h1{flex:1;margin:0;font-family:"UnifrakturCook","Old English Text MT",Georgia,serif;font-size:24px;font-weight:700;letter-spacing:.5px;color:#f1ecf4;text-shadow:0 0 12px #b49be055}
+header svg{width:28px;height:28px}
+.hbtn{background:#15121a;border:1px solid var(--line);color:var(--ink);border-radius:10px;min-width:42px;height:38px;font-size:18px;cursor:pointer}
+.pbar{display:flex;align-items:center;gap:8px;padding:6px 4px;min-height:44px}
+.pbar .who{display:flex;flex-direction:column;line-height:1.1}
+.pbar .side{font-weight:700;font-size:18px}
+.pbar .sub{font-size:13px;color:var(--muted)}
+.pbar .caps{flex:1;display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:0}
+.pbar .caps svg{width:20px;height:20px;margin-left:-5px}
+.pbar .adv{font-size:14px;color:var(--accent);margin-left:6px;font-weight:700}
+.pbar.turn .side{color:#fff;text-shadow:0 0 10px #b49be0}
+.pbar .dot{width:10px;height:10px;border-radius:50%;background:transparent;border:1px solid var(--line)}
+.pbar.turn .dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+#boardWrap{position:relative;align-self:center;padding:10px;border-radius:6px;background:linear-gradient(145deg,#1d1922,#0b0a0d);box-shadow:0 0 0 1px #3b3442,0 0 0 4px #0b0a0d,0 0 0 5px #4a4152,0 12px 40px #000c;--sz:min(calc(100vw - 36px),540px,calc(100dvh - 255px))}
+#board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);width:var(--sz);height:var(--sz);position:relative}
+.web{position:absolute;width:44px;height:44px;opacity:.35;pointer-events:none}
+.sq{position:relative;min-width:0;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sq.l{background:var(--light);background-image:linear-gradient(135deg,#ffffff0a,#0000)}
+.sq.d{background:var(--dark);background-image:linear-gradient(135deg,#ffffff05,#0000)}
+.sq.last:after{content:"";position:absolute;inset:0;background:#b49be02e}
+.sq.sel{box-shadow:inset 0 0 0 3px var(--accent)}
+.sq.chk{background:radial-gradient(circle,#d42a45 0%,#7a1424 45%,transparent 75%),var(--dark)}
+.sq .mv{position:absolute;width:28%;height:28%;border-radius:50%;background:#b49be0aa;box-shadow:0 0 8px #b49be0;z-index:2;pointer-events:none}
+.sq .cp{position:absolute;inset:6%;border-radius:50%;border:3px solid #d42a45bb;z-index:2;pointer-events:none}
+.sq .co{position:absolute;font-size:calc(var(--sz)/40);color:#ffffff55;font-family:Georgia,serif;pointer-events:none}
+.sq .co.f{right:3px;bottom:1px}.sq .co.r{left:3px;top:1px}
+.pc{width:88%;height:88%;z-index:1;pointer-events:none;transition:transform .12s}
+.pc.b{filter:drop-shadow(0 0 2px #b49be0cc) drop-shadow(0 2px 2px #000)}
+.pc.w{filter:drop-shadow(0 2px 2px #000a)}
+.sq.sel .pc{transform:translateY(-3px) scale(1.06)}
+#status{text-align:center;min-height:44px;font-size:17px;padding:4px 6px;display:flex;align-items:center;justify-content:center;font-weight:600;line-height:1.2}
+#status b{color:#fff}
+#bar{display:flex;gap:6px;padding:6px 0;padding-bottom:max(8px,env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+.btn{flex:1 1 auto;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:17px;font-weight:700;font-family:inherit;background:#15121a;color:var(--ink);cursor:pointer}
+.btn.prim{background:linear-gradient(#efeaf2,#bdb4c4);color:#120f15;border-color:#fff3}
+.btn.vio{background:linear-gradient(#5c4785,#352650);border-color:#8f78bd}
+.btn.red{background:linear-gradient(#8e1f30,#561019);border-color:#c23a50}
+.btn.on{background:linear-gradient(#efeaf2,#bdb4c4);color:#120f15}
+.btn:disabled{opacity:.35;cursor:default}
+#sheet{position:fixed;inset:0;background:#000b;display:flex;align-items:flex-end;justify-content:center;z-index:30}
+#sheet.hidden{display:none}
+.cardx{background:#120f16;border:1px solid #4a4152;border-bottom:0;border-radius:16px 16px 0 0;width:100%;max-width:560px;max-height:88vh;overflow:auto;padding:18px;padding-bottom:max(18px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px #000}
+@media(min-width:700px){#sheet{align-items:center}.cardx{border-radius:16px;border-bottom:1px solid #4a4152}}
+h2{margin:0 0 10px;font-family:"UnifrakturCook",Georgia,serif;font-size:28px;color:#f1ecf4}
+h3{margin:14px 0 6px;font-size:19px;color:var(--accent)}
+p,li{font-size:17px;line-height:1.4;margin:6px 0}
+ul{padding-left:20px;margin:6px 0}
+.cast{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cast .col{background:#1a1620;border:1px solid var(--line);border-radius:12px;padding:8px}
+.cast .row{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:16px}
+.cast svg{width:34px;height:34px;flex:none}
+.cast .real{color:var(--muted);font-size:14px}
+.sm{font-size:14px;color:var(--muted)}
+#start{position:fixed;inset:0;z-index:20;overflow:auto;display:flex;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#2a2133,#0b090d 60%,#050406);padding:18px 16px}
+#start .inner{max-width:460px;width:100%;margin:auto}
+.title{font-family:"UnifrakturCook","Old English Text MT",Georgia,serif;font-size:50px;text-align:center;margin:4px 0 0;color:#f4f0f6;text-shadow:0 0 18px #b49be066,0 3px 0 #000}
+.subt{text-align:center;color:var(--muted);font-size:19px;margin:2px 0 12px;font-style:italic}
+.lbl{font-weight:700;margin:14px 0 6px;color:var(--accent);font-size:17px}
+.seg{display:flex;gap:6px}.seg .btn{min-height:44px;font-size:16px}
+.hidden{display:none!important}
+.hero{display:flex;justify-content:center;align-items:flex-end;gap:2px;margin-top:6px}
+.hero svg{width:56px;height:56px}
+.hero svg.big{width:74px;height:74px}
+input.txt{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0c0a0f;color:#fff;font-size:20px;font-family:inherit;font-weight:700;margin:4px 0}
+.code{font-size:38px;font-weight:700;letter-spacing:7px;text-align:center;margin:6px 0;color:#fff;font-family:Georgia,serif}
+.item{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:#1a1620;margin:6px 0;font-size:18px}
+.promo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.promo button{background:#1a1620;border:1px solid var(--line);border-radius:12px;color:var(--ink);padding:8px 2px;font-family:inherit;font-size:14px;cursor:pointer}
+.promo svg{width:54px;height:54px;display:block;margin:0 auto}
+#ticker{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);z-index:25;display:flex;flex-direction:column;gap:4px;align-items:center;pointer-events:none;width:92%;max-width:520px}
+.tick{background:#120f16ee;border:1px solid #4a4152;padding:6px 12px;border-radius:10px;font-size:16px;animation:fade 4s forwards;text-align:center}
+@keyframes fade{0%{opacity:0}8%{opacity:1}80%{opacity:1}100%{opacity:0}}
+table.log{width:100%;border-collapse:collapse;font-size:15px}
+table.log td{padding:3px 4px;border-bottom:1px solid #ffffff10;vertical-align:top}
+table.log td:first-child{color:var(--muted);width:30px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <svg viewBox="0 0 40 40"><path d="M4 26c6-1 9-5 12-9 2-3 5-6 9-6 3 0 5 2 6 4l5 1-4 2c0 5-3 9-8 11l3 6h-2l-3-5-2 1 1 5h-2l-1-5c-6 0-12-2-18-5z" fill="#0a0a0c" stroke="#b49be0" stroke-width=".8"/><circle cx="27" cy="15" r="1" fill="#d42a45"/></svg>
+    <h1>Schattenschach</h1>
+    <button class="hbtn" id="bCast" title="Besetzung">👥</button>
+    <button class="hbtn" id="bMenu" title="Menü">☰</button>
+  </header>
+  <div class="pbar" id="pTop"></div>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div class="pbar" id="pBot"></div>
+  <div id="status"></div>
+  <div id="bar"></div>
+</div>
+<div id="ticker"></div>
+<div id="sheet" class="hidden"><div class="cardx" id="card"></div></div>
+
+<div id="start"><div class="inner">
+  <div class="hero" id="hero"></div>
+  <h1 class="title">Schattenschach</h1>
+  <div class="subt">Nevermore gegen Jericho</div>
+  <div class="lbl">Du spielst …</div>
+  <div class="seg" id="segC"><button class="btn on" data-v="b">Nevermore<br><span class="sm">(Schwarz)</span></button><button class="btn" data-v="w">Jericho<br><span class="sm">(Weiß)</span></button><button class="btn" data-v="r">Zufall</button></div>
+  <div class="lbl">Wie stark spielt der Computer?</div>
+  <div class="seg" id="segD"><button class="btn" data-v="easy">🕯️ Anfänger</button><button class="btn on" data-v="normal">🦇 Normal</button><button class="btn" data-v="pro">💀 Profi</button></div>
+  <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px">
+    <button class="btn prim" id="bAI" style="font-size:20px;min-height:54px">🤖 Gegen den Computer</button>
+    <button class="btn hidden" id="bCont">▶️ Weiterspielen</button>
+    <button class="btn" id="bLocal">👥 Zu zweit an einem Gerät</button>
+    <button class="btn vio" id="bOnline">🌐 Online mit Freunden (live)</button>
+    <button class="btn" id="bHelp">📜 Besetzung &amp; Regeln</button>
+  </div>
+  <p class="sm" style="text-align:center;margin-top:14px">Jericho (Weiß) zieht immer zuerst. Wer den gegnerischen König mattsetzt, gewinnt.</p>
+</div></div>
+
+<script>
+"use strict";
+/* ================= Besetzung ================= */
+const REAL={K:'König',Q:'Dame',R:'Turm',B:'Läufer',N:'Springer',P:'Bauer'};
+const CAST={
+  b:{side:'Nevermore',color:'Schwarz',K:'Gomez',Q:'Wednesday',R:'Lurch',B:'Enid',N:'Eiskalte Hand',P:'Pugsley'},
+  w:{side:'Jericho',color:'Weiß',K:'Sheriff Galpin',Q:'Thornhill',R:'Crackstone',B:'Tyler',N:'Hyde',P:'Pilger'}};
+const pn=(pc)=>`${CAST[pc[0]][pc[1]]} (${REAL[pc[1]]})`;
+const opp=c=>c==='w'?'b':'w';
+
+/* ================= Figuren-Grafik (selbst gezeichnet) ================= */
+const BASE='<path d="M10 37h25l1.5 4h-28z"/>';
+const SHAPE={
+ P:BASE+'<path d="M15.5 37q.5-9 4.5-13h5q4 4 4.5 13z"/><ellipse cx="22.5" cy="23.5" rx="6" ry="1.8"/><circle cx="22.5" cy="16" r="6"/>',
+ R:BASE+'<path d="M14 37l1.5-19h14l1.5 19z"/><path d="M12 8h4.5v3.5h3V8h6v3.5h3V8H33v10H12z"/><path d="M14 18h17" class="ln"/>',
+ B:BASE+'<path d="M16 37q1-8 4-11h5q3 3 4 11z"/><ellipse cx="22.5" cy="26" rx="6.5" ry="1.8"/><path d="M22.5 7c7 5 8 13 3 18h-6c-5-5-4-13 3-18z"/><circle cx="22.5" cy="5.5" r="2.2"/><path d="M24.5 12l-4 7" class="ln"/>',
+ N:BASE+'<path d="M14 37c0-6 4-9 7-12-4 1-8 2-10-1-1.5-3 3-7 7-10l-1-5 4 3c6-1 11 3 12 10 1 6-1 11-1 15z"/><circle cx="20.5" cy="16" r="1.3" class="eye"/><path d="M27 12c3 3 4 8 3 13" class="ln"/>',
+ Q:BASE+'<path d="M14 37q0-8 3-11h11q3 3 3 11z"/><path d="M10 13l5 14h15l5-14-6 7-3-11-3 10-3-10-3 11z"/><circle cx="10" cy="12" r="2"/><circle cx="35" cy="12" r="2"/><circle cx="19" cy="8" r="2"/><circle cx="26" cy="8" r="2"/><circle cx="22.5" cy="6.5" r="2"/><path d="M15 27h15" class="ln"/>',
+ K:BASE+'<path d="M13.5 37q-2-12 9-16 11 4 9 16z"/><path d="M21 3h3v4h4v3h-4v6h-3v-6h-4V7h4z"/><path d="M16 21q6.5-4 13 0" class="ln"/><path d="M15 30h15" class="ln"/>'};
+function pieceSVG(pc,cls=''){const w=pc[0]==='w';
+  const fill=w?'url(#gw)':'url(#gb)',stroke=w?'#2a2430':'#b49be0',ln=w?'#6b6070':'#5d4d79',eye=w?'#2a2430':'#d42a45';
+  return`<svg viewBox="0 0 45 45" class="pc ${pc[0]} ${cls}"><defs><linearGradient id="gw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbf8f2"/><stop offset="1" stop-color="#c9c0b4"/></linearGradient><linearGradient id="gb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b2433"/><stop offset="1" stop-color="#050406"/></linearGradient></defs>
+   <g fill="${fill}" stroke="${stroke}" stroke-width="1.3" stroke-linejoin="round">${SHAPE[pc[1]].replace(/class="ln"/g,`fill="none" stroke="${ln}" stroke-width="1.1"`).replace(/class="eye"/g,`fill="${eye}" stroke="none"`)}</g></svg>`}
+
+/* ================= Regeln ================= */
+const FILES='abcdefgh';
+const sqName=i=>FILES[i&7]+(8-(i>>3));
+const NOFF=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+const KOFF=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+const DIAG=[[-1,-1],[-1,1],[1,-1],[1,1]],ORTH=[[-1,0],[1,0],[0,-1],[0,1]];
+const inb=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
+function fromFEN(f){const[p,t,cr,ep,hm,fm]=f.split(' ');const b=[];
+  for(const ch of p.replace(/\//g,'')){if(/\d/.test(ch))for(let i=0;i<+ch;i++)b.push('');else b.push((ch===ch.toUpperCase()?'w':'b')+ch.toUpperCase())}
+  return{b,t,cr:cr==='-'?'':cr,ep:ep==='-'?-1:(8-+ep[1])*8+FILES.indexOf(ep[0]),hm:+hm||0,fm:+fm||1}}
+const START='rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+function attacked(b,sq,by){const r=sq>>3,c=sq&7;
+  const pr=by==='w'?r+1:r-1;
+  for(const dc of[-1,1]){const cc=c+dc;if(inb(pr,cc)&&b[pr*8+cc]===by+'P')return true}
+  for(const[dr,dc]of NOFF){const rr=r+dr,cc=c+dc;if(inb(rr,cc)&&b[rr*8+cc]===by+'N')return true}
+  for(const[dr,dc]of KOFF){const rr=r+dr,cc=c+dc;if(inb(rr,cc)&&b[rr*8+cc]===by+'K')return true}
+  for(const[dr,dc]of DIAG){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const x=b[rr*8+cc];if(x){if(x===by+'B'||x===by+'Q')return true;break}rr+=dr;cc+=dc}}
+  for(const[dr,dc]of ORTH){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const x=b[rr*8+cc];if(x){if(x===by+'R'||x===by+'Q')return true;break}rr+=dr;cc+=dc}}
+  return false}
+const kingSq=(b,c)=>b.indexOf(c+'K');
+function pseudo(S,capsOnly){const b=S.b,t=S.t,o=opp(t),out=[];
+  const add=(f,to,x)=>{const m={f,t:to,cap:b[to]||''};if(x)Object.assign(m,x);out.push(m)};
+  for(let i=0;i<64;i++){const pc=b[i];if(!pc||pc[0]!==t)continue;const r=i>>3,c=i&7,ty=pc[1];
+    if(ty==='P'){const d=t==='w'?-1:1,r1=r+d,last=t==='w'?0:7;
+      if(!capsOnly&&inb(r1,c)&&!b[r1*8+c]){if(r1===last){for(const p of'QRBN')add(i,r1*8+c,{pr:p})}else{add(i,r1*8+c);if(r===(t==='w'?6:1)&&!b[(r+2*d)*8+c])add(i,(r+2*d)*8+c,{dbl:1})}}
+      for(const dc of[-1,1]){const cc=c+dc;if(!inb(r1,cc))continue;const to=r1*8+cc;
+        if(b[to]&&b[to][0]===o){if(r1===last){for(const p of'QRBN')add(i,to,{pr:p})}else add(i,to)}
+        else if(to===S.ep)add(i,to,{ep:1,cap:o+'P'})}
+      if(capsOnly&&inb(r1,c)&&!b[r1*8+c]&&r1===last)add(i,r1*8+c,{pr:'Q'})}
+    else if(ty==='N'||ty==='K'){for(const[dr,dc]of ty==='N'?NOFF:KOFF){const rr=r+dr,cc=c+dc;if(!inb(rr,cc))continue;const x=b[rr*8+cc];if(x&&x[0]===t)continue;if(capsOnly&&!x)continue;add(i,rr*8+cc)}
+      if(ty==='K'&&!capsOnly){const home=t==='w'?60:4;if(i===home&&!attacked(b,i,o)){
+        const K=t==='w'?'K':'k',Q=t==='w'?'Q':'q';
+        if(S.cr.includes(K)&&!b[i+1]&&!b[i+2]&&b[i+3]===t+'R'&&!attacked(b,i+1,o)&&!attacked(b,i+2,o))add(i,i+2,{castle:'K'});
+        if(S.cr.includes(Q)&&!b[i-1]&&!b[i-2]&&!b[i-3]&&b[i-4]===t+'R'&&!attacked(b,i-1,o)&&!attacked(b,i-2,o))add(i,i-2,{castle:'Q'})}}}
+    else{const dirs=ty==='B'?DIAG:ty==='R'?ORTH:DIAG.concat(ORTH);
+      for(const[dr,dc]of dirs){let rr=r+dr,cc=c+dc;while(inb(rr,cc)){const x=b[rr*8+cc];if(x){if(x[0]===o)add(i,rr*8+cc);break}if(!capsOnly)add(i,rr*8+cc);rr+=dr;cc+=dc}}}}
+  return out}
+function make(S,m){const b=S.b.slice(),pc=b[m.f],t=S.t;
+  b[m.t]=m.pr?t+m.pr:pc;b[m.f]='';
+  if(m.ep)b[(m.f>>3)*8+(m.t&7)]='';
+  if(m.castle){if(m.castle==='K'){b[m.f+1]=b[m.f+3];b[m.f+3]=''}else{b[m.f-1]=b[m.f-4];b[m.f-4]=''}}
+  let cr=S.cr;if(cr){if(pc[1]==='K')cr=cr.replace(t==='w'?/[KQ]/g:/[kq]/g,'');
+    for(const[s,k]of[[63,'K'],[56,'Q'],[7,'k'],[0,'q']])if(m.f===s||m.t===s)cr=cr.replace(k,'')}
+  return{b,t:opp(t),cr,ep:m.dbl?(m.f+m.t)>>1:-1,hm:(pc[1]==='P'||m.cap)?0:S.hm+1,fm:S.fm+(t==='b'?1:0)}}
+const inCheck=(S,c)=>attacked(S.b,kingSq(S.b,c),opp(c));
+function legal(S){return pseudo(S).filter(m=>{const n=make(S,m);return !attacked(n.b,kingSq(n.b,S.t),n.t)})}
+const posKey=S=>S.b.map(x=>x||'.').join('')+S.t+S.cr+S.ep;
+function insufficient(b){const rest=b.filter(x=>x&&x[1]!=='K');if(!rest.length)return true;if(rest.length===1&&'NB'.includes(rest[0][1]))return true;
+  if(rest.length===2&&rest.every(x=>x[1]==='B')&&rest[0][0]!==rest[1][0]){const cols=b.map((x,i)=>x&&x[1]==='B'?((i>>3)+(i&7))%2:-1).filter(v=>v>=0);return cols[0]===cols[1]}return false}
+
+/* ================= Computer ================= */
+const VAL={P:100,N:320,B:330,R:500,Q:900,K:0};
+function pst(ty,r,c,end){const adv=7-r,cen=3.5-Math.max(Math.abs(c-3.5),Math.abs(r-3.5));
+  switch(ty){case'P':return adv*7+(adv>=5?adv*6:0)+((c===3||c===4)&&adv>=2?12:0)-((c===3||c===4)&&adv===1?6:0);
+    case'N':return cen*12-22;case'B':return cen*6-6;case'R':return(adv===6?18:0)+((c===3||c===4)?4:0);case'Q':return cen*3;
+    case'K':return end?cen*12:(adv===0?((c<=2||c>=6)?22:0):-12*adv)}}
+const PST={};for(const ty of'PNBRQK')for(const end of[0,1]){const a=[];for(let i=0;i<64;i++)a.push(pst(ty,i>>3,i&7,end));PST[ty+end]=a}
+function evaluate(S){const b=S.b;let s=0,mat=0;for(const x of b)if(x&&x[1]!=='K'&&x[1]!=='P')mat+=VAL[x[1]];const end=mat<=1500?1:0;
+  let bw=0,bb=0;
+  for(let i=0;i<64;i++){const x=b[i];if(!x)continue;const ty=x[1];
+    if(x[0]==='w'){s+=VAL[ty]+PST[ty+end][i];if(ty==='B')bw++}else{s-=VAL[ty]+PST[ty+end][(7-(i>>3))*8+(i&7)];if(ty==='B')bb++}}
+  if(bw>=2)s+=30;if(bb>=2)s-=30;
+  return S.t==='w'?s:-s}
+const MATE=100000;let AI={deadline:0,nodes:0,stop:false};
+function order(ms){for(const m of ms)m.o=(m.cap?VAL[m.cap[1]]*10-(m.pr?0:1):0)+(m.pr?800:0);return ms.sort((a,b)=>b.o-a.o)}
+function quiesce(S,a,bt,d){AI.nodes++;const st=evaluate(S);if(st>=bt)return bt;if(st>a)a=st;if(d>=5)return a;
+  for(const m of order(pseudo(S,true))){const n=make(S,m);if(attacked(n.b,kingSq(n.b,S.t),n.t))continue;const v=-quiesce(n,-bt,-a,d+1);if(v>=bt)return bt;if(v>a)a=v}return a}
+function negamax(S,d,a,bt,ply){if((++AI.nodes&1023)===0&&Date.now()>AI.deadline)AI.stop=true;if(AI.stop)return 0;
+  const ms=legal(S);if(!ms.length)return inCheck(S,S.t)?-MATE+ply:0;if(S.hm>=100)return 0;
+  if(d<=0)return quiesce(S,a,bt,0);
+  let best=-Infinity;for(const m of order(ms)){const v=-negamax(make(S,m),d-1,-bt,-a,ply+1);if(AI.stop)return 0;if(v>best)best=v;if(v>a)a=v;if(a>=bt)break}return best}
+function think(S,diff){const ms=legal(S);if(ms.length===1)return ms[0];
+  if(diff==='easy'&&Math.random()<.3)return ms[Math.floor(Math.random()*ms.length)];
+  const maxD=diff==='easy'?1:diff==='normal'?2:6,budget=diff==='pro'?1600:1200,noise=diff==='easy'?90:diff==='normal'?15:0;
+  AI={deadline:Date.now()+budget,nodes:0,stop:false};let bestM=ms[0],ordered=order(ms.slice());
+  for(let d=1;d<=maxD;d++){let a=-Infinity,cur=null;const scores=[];
+    for(const m of ordered){let v=noise?-negamax(make(S,m),d-1,-Infinity,Infinity,1):-negamax(make(S,m),d-1,-Infinity,-a,1);
+      if(AI.stop)break;if(noise)v+=(Math.random()*2-1)*noise;scores.push([v,m]);if(v>a){a=v;cur=m}}
+    if(AI.stop&&d>1)break;
+    if(cur){bestM=cur;const done=new Set(scores.map(x=>x[1]));ordered=scores.sort((x,y)=>y[0]-x[0]).map(x=>x[1]).concat(ordered.filter(m=>!done.has(m)))}
+    if(a>MATE/2||AI.stop)break}
+  return bestM}
+
+/* ================= Spielzustand ================= */
+let G=null,ME='w',sel=-1,busy=false;
+const $=id=>document.getElementById(id);
+function newGame(mode,opts){opts=opts||{};const S=fromFEN(START);
+  G={mode,diff:opts.diff||'normal',human:opts.human||'w',names:opts.names||{w:'',b:''},S,hist:[],over:null,rep:{[posKey(S)]:1},last:null,log:[]};
+  sel=-1;ME=mode==='ai'?G.human:mode==='online'?ME:'w';overShown=false}
+function describe(S,m,n){const pc=S.b[m.f];let t=`${pn(pc)} ${sqName(m.f)}→${sqName(m.t)}`;
+  if(m.castle)t=`${CAST[pc[0]].K} (König) rochiert ${m.castle==='K'?'kurz':'lang'}`;
+  if(m.cap)t+=` schlägt ${pn(m.cap)}`;if(m.pr)t+=` und wird zu ${CAST[pc[0]][m.pr]} (${REAL[m.pr]})`;
+  if(inCheck(n,n.t))t+=' – <b>Schach!</b>';return t}
+function doMove(m){const S=G.S,n=make(S,m),txt=describe(S,m,n);
+  G.hist.push({S,last:G.last,rep:posKey(n)});G.S=n;G.last={f:m.f,t:m.t};G.log.push(txt);
+  const k=posKey(n);G.rep[k]=(G.rep[k]||0)+1;
+  const ms=legal(n);
+  if(!ms.length)G.over=inCheck(n,n.t)?{type:'mate',win:S.t}:{type:'stale'};
+  else if(n.hm>=100)G.over={type:'fifty'};else if(G.rep[k]>=3)G.over={type:'rep'};else if(insufficient(n.b))G.over={type:'mat'};
+  sfx(G.over&&G.over.type==='mate'?'mate':inCheck(n,n.t)?'check':m.cap?'cap':'move');
+  return txt}
+function undo(){if(!G.hist.length)return;const h=G.hist.pop();G.rep[h.rep]--;G.S=h.S;G.last=h.last;G.log.pop();G.over=null}
+/* Alle Züge laufen hier durch – lokal direkt, online beim Gastgeber */
+function applyAction(color,a){if(!G)return{err:1};
+  if(a.t==='rematch'){if(G.mode!=='online'||!G.over)return{err:1};hostRematch();return{ok:1}}
+  if(G.over)return{err:'Das Spiel ist vorbei'};
+  if(a.t==='resign'){G.over={type:'resign',win:opp(color)};sfx('mate');return{ok:1}}
+  if(a.t==='move'){if(G.S.t!==color)return{err:'Nicht dein Zug'};
+    const m=legal(G.S).find(x=>x.f===a.f&&x.t===a.to&&(x.pr||'')===(a.pr||''));if(!m)return{err:'Dieser Zug ist nicht erlaubt'};
+    doMove(m);return{ok:1}}
+  return{err:1}}
+function act(a){if(NET.mode==='guest'){NET.hostConn&&NET.hostConn.send({type:'act',a});return}
+  const r=applyAction(G.mode==='local'?G.S.t:ME,a);if(r.err&&r.err!==1)tick(r.err);save();sync();render();aiTurn()}
+function aiTurn(){if(!G||G.mode!=='ai'||G.over||G.S.t===G.human||busy)return;busy=true;render();
+  setTimeout(()=>{const m=think(G.S,G.diff);busy=false;if(!G||G.over||G.S.t===G.human)return;doMove(m);save();render()},380)}
+
+/* ================= Anzeige ================= */
+function bottomColor(){return G.mode==='local'?'w':ME}
+function myTurn(){if(!G||G.over||busy)return false;if(G.mode==='local')return true;return G.S.t===ME}
+function capturedBy(c){const start={P:8,N:2,B:2,R:2,Q:1};const have={P:0,N:0,B:0,R:0,Q:0};
+  for(const x of G.S.b)if(x&&x[0]===opp(c)&&x[1]!=='K')have[x[1]]++;
+  const out=[];for(const t of'QRBNP')for(let i=have[t];i<start[t];i++)out.push(opp(c)+t);return out}
+function matDiff(c){let s=0;for(const x of G.S.b)if(x)s+=(x[0]===c?1:-1)*VAL[x[1]];return Math.round(s/100)}
+function who(c){if(G.mode==='ai')return c===G.human?'Du':'Computer ('+DIFFN[G.diff]+')';if(G.mode==='online')return(c===ME?'Du':G.names[c]||'Gegner');return 'Spieler '+(c==='w'?'1':'2')}
+function pbar(el,c){const caps=capturedBy(c),d=matDiff(c);
+  el.className='pbar'+(G.S.t===c&&!G.over?' turn':'');
+  el.innerHTML=`<span class="dot"></span><div class="who"><span class="side">${CAST[c].side} <span class="sm">(${CAST[c].color})</span></span><span class="sub">${esc(who(c))}</span></div><div class="caps">${caps.map(x=>pieceSVG(x)).join('')}${d>0?`<span class="adv">+${d}</span>`:''}</div>`}
+const esc=s=>String(s).replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
+function render(){if(!G)return;const bc=bottomColor(),flip=bc==='b';
+  pbar($('pTop'),opp(bc));pbar($('pBot'),bc);
+  const S=G.S,targets=sel>=0?legal(S).filter(m=>m.f===sel):[],chk=inCheck(S,S.t)?kingSq(S.b,S.t):-1;
+  let h='';for(let d=0;d<64;d++){const i=flip?63-d:d,r=i>>3,c=i&7,x=S.b[i];
+    const cls=['sq',(r+c)%2?'d':'l'];if(G.last&&(G.last.f===i||G.last.t===i))cls.push('last');if(i===sel)cls.push('sel');if(i===chk)cls.push('chk');
+    const tg=targets.find(m=>m.t===i);
+    h+=`<div class="${cls.join(' ')}" data-i="${i}">${x?pieceSVG(x):''}${tg?(tg.cap?'<span class="cp"></span>':'<span class="mv"></span>'):''}${(d&7)===0?`<span class="co r">${8-r}</span>`:''}${d>=56?`<span class="co f">${FILES[c]}</span>`:''}</div>`}
+  const bd=$('board');bd.innerHTML=h+WEBS;bd.querySelectorAll('.sq').forEach(el=>el.onclick=()=>onSq(+el.dataset.i));
+  // Status
+  let st='';if(G.over)st=overText();
+  else if(busy)st=`🕯️ ${CAST[S.t].side} brütet über dem nächsten Zug …`;
+  else if(sel>=0)st=`<span><b>${pn(S.b[sel])}</b> ausgewählt – wohin?</span>`;
+  else if(G.log.length)st=`<span>${G.log[G.log.length-1]}</span>`;
+  else st=`<span>${CAST.w.side} (Weiß) beginnt.</span>`;
+  if(!G.over&&!busy&&sel<0&&G.log.length&&myTurn()&&G.mode!=='local')st=`<span>${G.log[G.log.length-1]}<br><span class="sm">Du bist dran.</span></span>`;
+  if(!G.over&&!busy&&sel<0&&G.mode==='local')st=`<span>${G.log.length?G.log[G.log.length-1]+'<br>':''}<span class="sm">${CAST[S.t].side} (${CAST[S.t].color}) ist dran.</span></span>`;
+  $('status').innerHTML=st;
+  // Knöpfe
+  let b='';if(G.over)b=G.mode==='online'?`<button class="btn prim" id="aRe">🔁 Revanche</button><button class="btn" id="aHome">🏠 Start</button>`:`<button class="btn prim" id="aNew">🔁 Nochmal</button><button class="btn" id="aUndo">↶ Zug zurück</button><button class="btn" id="aHome">🏠 Start</button>`;
+  else b=(G.mode!=='online'?`<button class="btn" id="aUndo" ${G.hist.length&&!busy?'':'disabled'}>↶ Zug zurück</button>`:'')+`<button class="btn" id="aLog">📜 Züge</button><button class="btn red" id="aRes" ${G.mode==='local'||myTurn()||G.mode==='online'?'':'disabled'}>🏳️ Aufgeben</button>`;
+  $('bar').innerHTML=b;
+  const on=(id,f)=>{const e=$(id);if(e)e.onclick=f};
+  on('aUndo',()=>{if(busy)return;undo();if(G.mode==='ai'){while(G.hist.length&&G.S.t!==G.human)undo()}sel=-1;save();render()});
+  on('aLog',showLog);on('aHome',()=>{netReset();showStart()});
+  on('aNew',()=>{const m=G.mode;newGame(m,{diff:G.diff,human:G.mode==='ai'?(pick.c==='r'?(Math.random()<.5?'w':'b'):pick.c):'w'});if(m==='ai')ME=G.human;save();render();aiTurn()});
+  on('aRe',()=>act({t:'rematch'}));
+  on('aRes',()=>confirmSheet('Wirklich aufgeben?',`${G.mode==='local'?CAST[G.S.t].side+' gibt':'Du gibst'} die Partie verloren.`,()=>act({t:'resign'})));
+  if(G.over&&!overShown){overShown=true;setTimeout(showOver,700)}}
+let overShown=false;
+const WEBS='<svg class="web" style="left:-10px;top:-10px" viewBox="0 0 40 40"><g fill="none" stroke="#cfc6d8" stroke-width=".6"><path d="M0 0L40 14M0 0L28 28M0 0L14 40"/><path d="M8 3Q7 7 3 8M16 6Q14 14 6 16M24 8Q20 20 8 24M32 11Q26 26 11 32"/></g></svg><svg class="web" style="right:-10px;bottom:-10px;transform:rotate(180deg)" viewBox="0 0 40 40"><g fill="none" stroke="#cfc6d8" stroke-width=".6"><path d="M0 0L40 14M0 0L28 28M0 0L14 40"/><path d="M8 3Q7 7 3 8M16 6Q14 14 6 16M24 8Q20 20 8 24M32 11Q26 26 11 32"/></g></svg>';
+function overText(){const o=G.over;
+  if(o.type==='mate')return`<span>☠️ <b>Schachmatt!</b> ${CAST[o.win].side} gewinnt.</span>`;
+  if(o.type==='resign')return`<span>🏳️ Aufgegeben – ${CAST[o.win].side} gewinnt.</span>`;
+  return`<span>⚖️ <b>Remis</b> – ${{stale:'Patt, niemand kann mehr ziehen',fifty:'50 Züge ohne Schlagen',rep:'dreimal dieselbe Stellung',mat:'zu wenig Material zum Mattsetzen'}[o.type]}.</span>`}
+function onSq(i){if(!myTurn())return;const S=G.S,x=S.b[i],mine=G.mode==='local'?S.t:ME;
+  if(sel>=0){const ms=legal(S).filter(m=>m.f===sel&&m.t===i);
+    if(ms.length){const m=ms[0];if(m.pr){askPromo(sel,i);return}sel=-1;act({t:'move',f:m.f,to:m.t});return}}
+  if(x&&x[0]===mine&&x[0]===S.t){sel=sel===i?-1:i;if(sel>=0&&!legal(S).some(m=>m.f===sel))tick(`${pn(x)} kann gerade nicht ziehen.`);render();return}
+  if(sel>=0){sel=-1;render()}}
+function askPromo(f,t){const c=G.S.t;
+  openSheet(`<h2>Verwandlung</h2><p>${CAST[c].P} (Bauer) hat das Ende erreicht. Wer soll er werden?</p><div class="promo">${'QRBN'.split('').map(p=>`<button data-p="${p}">${pieceSVG(c+p)}${CAST[c][p]}<br><span class="sm">(${REAL[p]})</span></button>`).join('')}</div>`);
+  card.querySelectorAll('[data-p]').forEach(bt=>bt.onclick=()=>{closeSheet();sel=-1;act({t:'move',f,to:t,pr:bt.dataset.p})})}
+
+/* ================= Fenster ================= */
+const sheet=$('sheet'),card=$('card');
+function openSheet(h){card.innerHTML=h;sheet.classList.remove('hidden')}
+function closeSheet(){sheet.classList.add('hidden');card.innerHTML=''}
+sheet.addEventListener('pointerdown',e=>{if(e.target===sheet&&!sheet.dataset.lock)closeSheet()});
+function confirmSheet(t,txt,f){openSheet(`<h2>${t}</h2><p>${txt}</p><div style="display:flex;gap:8px"><button class="btn red" id="cY">Ja</button><button class="btn" id="cN">Nein</button></div>`);$('cY').onclick=()=>{closeSheet();f()};$('cN').onclick=closeSheet}
+function castHTML(){const col=c=>`<div class="col"><h3 style="margin-top:2px">${CAST[c].side} <span class="sm">(${CAST[c].color})</span></h3>${'KQRBNP'.split('').map(t=>`<div class="row">${pieceSVG(c+t)}<div>${CAST[c][t]}<br><span class="real">(${REAL[t]})</span></div></div>`).join('')}</div>`;
+  return`<div class="cast">${col('b')}${col('w')}</div>`}
+const RULES=`<h3>So wird gespielt</h3><ul>
+<li>Es gelten die normalen Schachregeln. Jericho (Weiß) zieht zuerst.</li>
+<li>Tippe eine eigene Figur an – die erlaubten Felder leuchten violett, rote Ringe zeigen, wen du schlagen kannst.</li>
+<li>Rochade, Schlagen im Vorbeigehen und Bauernverwandlung sind dabei.</li>
+<li>Steht dein König im Schach, glüht sein Feld rot.</li>
+<li>Gewonnen hat, wer den gegnerischen König mattsetzt. Patt, dreimal dieselbe Stellung oder zu wenig Material heißt Remis.</li>
+<li>🌐 Online: Raum erstellen, Link an einen Freund schicken – jeder spielt auf seinem Gerät.</li></ul>
+<p class="sm">Fan-Projekt ohne Verbindung zur Serie „Wednesday“ oder zu Netflix. Die Figuren sind selbst gezeichnet, nur die Namen erinnern an die Serie.</p>`;
+function showCast(){openSheet(`<h2>Die Besetzung</h2>${castHTML()}${RULES}<button class="btn" id="cc" style="width:100%;margin-top:8px">Schließen</button>`);$('cc').onclick=closeSheet}
+function showLog(){const L=G.log;openSheet(`<h2>Bisherige Züge</h2>${L.length?`<table class="log">${L.map((t,i)=>`<tr><td>${Math.floor(i/2)+1}${i%2?'…':'.'}</td><td>${t}</td></tr>`).join('')}</table>`:'<p>Noch kein Zug gespielt.</p>'}<button class="btn" id="lc" style="width:100%;margin-top:10px">Schließen</button>`);$('lc').onclick=closeSheet}
+function showOver(){const o=G.over;let win=null;if(o.win)win=G.mode==='local'?null:o.win===ME;
+  const head=o.win?(win===true?'Gewonnen!':win===false?'Verloren …':CAST[o.win].side+' gewinnt!'):'Remis';
+  openSheet(`<div style="text-align:center;font-size:56px">${o.win?(win===false?'🥀':'👑'):'⚖️'}</div><h2 style="text-align:center">${head}</h2><p style="text-align:center">${overText()}</p>
+   <div style="display:flex;gap:8px"><button class="btn prim" id="oA">${G.mode==='online'?'🔁 Revanche':'🔁 Nochmal'}</button><button class="btn" id="oB">Brett ansehen</button></div>`);
+  $('oA').onclick=()=>{closeSheet();const e=$(G.mode==='online'?'aRe':'aNew');e&&e.click()};$('oB').onclick=closeSheet;
+  if(win!==false)sfx('win')}
+const DIFFN={easy:'Anfänger',normal:'Normal',pro:'Profi'};
+function openMenu(){openSheet(`<h2>Menü</h2>
+  <button class="btn" id="mCast" style="width:100%;margin:4px 0">👥 Besetzung &amp; Regeln</button>
+  <button class="btn" id="mLog" style="width:100%;margin:4px 0" ${G?'':'disabled'}>📜 Bisherige Züge</button>
+  <button class="btn" id="mDiff" style="width:100%;margin:4px 0" ${G&&G.mode==='ai'?'':'disabled'}>🎚️ Computer-Stärke: ${DIFFN[(G&&G.diff)||pick.diff]}</button>
+  <button class="btn" id="mSound" style="width:100%;margin:4px 0">${soundOn?'🔊 Ton an':'🔇 Ton aus'}</button>
+  <button class="btn red" id="mHome" style="width:100%;margin:4px 0">🏠 Zurück zum Start</button>
+  <button class="btn" id="mClose" style="width:100%">Schließen</button>`);
+  $('mCast').onclick=showCast;$('mLog').onclick=()=>G&&showLog();$('mSound').onclick=()=>{soundOn=!soundOn;openMenu()};
+  $('mDiff').onclick=()=>{if(!G||G.mode!=='ai')return;const o=['easy','normal','pro'];G.diff=o[(o.indexOf(G.diff)+1)%3];pick.diff=G.diff;try{localStorage.setItem('ss_diff',G.diff)}catch(e){}save();render();openMenu()};
+  $('mHome').onclick=()=>{closeSheet();netReset();showStart()};$('mClose').onclick=closeSheet}
+$('bMenu').onclick=openMenu;$('bCast').onclick=showCast;
+
+/* ================= Ticker, Ton, Speichern ================= */
+function tick(msg){const el=document.createElement('div');el.className='tick';el.innerHTML=msg;const tk=$('ticker');tk.appendChild(el);while(tk.children.length>2)tk.firstChild.remove();setTimeout(()=>el.remove(),4000)}
+let soundOn=true,AC=null;
+function sfx(t){if(!soundOn)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const n=AC.currentTime;
+  const tone=(f,d,w='sine',v=.07,dl=0)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=w;o.frequency.setValueAtTime(f,n+dl);g.gain.setValueAtTime(.0001,n+dl);g.gain.exponentialRampToValueAtTime(v,n+dl+.02);g.gain.exponentialRampToValueAtTime(.0001,n+dl+d);o.connect(g).connect(AC.destination);o.start(n+dl);o.stop(n+dl+d+.05)};
+  const thud=(f,v)=>{const b=AC.createBuffer(1,AC.sampleRate*.09,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();fl.type='lowpass';fl.frequency.value=f;g.gain.value=v;s.buffer=b;s.connect(fl).connect(g).connect(AC.destination);s.start()};
+  if(t==='move')thud(900,.9);
+  else if(t==='cap'){thud(500,1.2);tone(110,.5,'triangle',.05)}
+  else if(t==='check'){thud(800,.8);[220,261.6,311.1].forEach((f,k)=>tone(f,.9,'sawtooth',.025,k*.02))}
+  else if(t==='mate')[196,185,155.6,146.8].forEach((f,k)=>tone(f,.7,'sawtooth',.04,k*.22));
+  else if(t==='win')[293.7,349.2,440,587.3].forEach((f,k)=>tone(f,.6,'triangle',.06,k*.15))}catch(e){}}
+const SAVE='schattenschach_v1';
+function save(){if(!G||G.mode==='online')return;try{localStorage.setItem(SAVE,JSON.stringify(G))}catch(e){}}
+function hasSave(){try{const s=JSON.parse(localStorage.getItem(SAVE)||'null');return !!s&&!s.over&&s.hist.length>0}catch(e){return false}}
+
+/* ================= Online (live, direkt zwischen den Geräten) ================= */
+const NET={mode:null,peer:null,conn:null,hostConn:null,code:'',nick:'',started:false,lost:false,seen:0,guestNick:''};
+const PFX='schattenschach-v1-';
+function peerOpts(){const u=new URLSearchParams(location.search),o={debug:0};if(u.get('peerhost')){o.host=u.get('peerhost');o.port=+u.get('peerport')||9000;o.path='/';o.secure=false}return o}
+function loadPeer(){return window.Peer?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+function sync(){if(NET.mode!=='host'||!G||!NET.conn||!NET.conn.open)return;NET.conn.send({type:'state',s:JSON.stringify(G)})}
+function netReset(){try{if(NET.peer)NET.peer.destroy()}catch(e){}Object.assign(NET,{mode:null,peer:null,conn:null,hostConn:null,code:'',started:false,lost:false,seen:0,guestNick:''})}
+setInterval(()=>{const now=Date.now();
+  const c=NET.mode==='host'?NET.conn:NET.mode==='guest'?NET.hostConn:null;if(!c||!c.open)return;c.send({type:'ping'});
+  if(NET.started&&now-(NET.seen||now)>20000&&!NET.lost){NET.lost=true;tick('🔌 Vom Gegner kommt gerade nichts an …')}},3000);
+function netError(e){const t=e&&e.type;const msg=t==='peer-unavailable'?'Diesen Raum gibt es nicht (mehr). Stimmt der Code?':t==='unavailable-id'?'Der Raum-Code ist gerade belegt – bitte nochmal versuchen.':'Die Verbindung hat nicht geklappt. Prüfe das Internet und versuche es nochmal.';
+  delete sheet.dataset.lock;openSheet(`<h2>Hoppla</h2><p>${msg}</p><button class="btn prim" id="eOk" style="width:100%">OK</button>`);$('eOk').onclick=()=>{closeSheet();netReset();showStart();onlineMenu()}}
+function onlineMenu(code){let nick='';try{nick=localStorage.getItem('dt_nick')||''}catch(e){}
+  openSheet(`<h2>Online spielen</h2><p>Ihr spielt live gegeneinander – jeder auf seinem eigenen Gerät. Wer den Raum erstellt, beginnt als Jericho (Weiß), bei der Revanche wird getauscht.</p>
+   <div class="lbl">Dein Name</div><input class="txt" id="oNick" maxlength="14" placeholder="z. B. Luke" value="${esc(nick)}">
+   <button class="btn prim" id="oHost" style="width:100%;margin:8px 0">🏰 Neuen Raum erstellen</button>
+   <div class="lbl">… oder einem Raum beitreten</div><input class="txt" id="oCode" maxlength="5" placeholder="CODE" style="text-transform:uppercase;letter-spacing:5px" value="${esc(code||'')}">
+   <button class="btn vio" id="oJoin" style="width:100%;margin:8px 0">🚪 Beitreten</button>
+   <p class="sm">Tipp: Spielt nur mit Leuten, die ihr kennt – den Code bekommt nur, wem ihr ihn schickt.</p>
+   <button class="btn" id="oBack" style="width:100%">Zurück</button>`);
+  const getNick=()=>{const n=$('oNick').value.trim().slice(0,14);if(!n){$('oNick').focus();$('oNick').style.borderColor='#d42a45';return null}try{localStorage.setItem('dt_nick',n)}catch(e){}return n};
+  $('oHost').onclick=()=>{const n=getNick();if(n)hostRoom(n)};
+  $('oJoin').onclick=()=>{const n=getNick(),c=$('oCode').value.trim().toUpperCase();if(!n)return;if(c.length<4){$('oCode').focus();return}joinRoom(c,n)};
+  $('oBack').onclick=closeSheet}
+function connecting(t){sheet.dataset.lock='1';openSheet(`<h2>${t}</h2><p>Einen Moment …</p>`)}
+const roomLink=()=>location.origin+location.pathname+'?raum='+NET.code;
+async function hostRoom(nick){netReset();connecting('Raum wird erstellt');try{await loadPeer()}catch(e){netError({});return}
+  const code=Array.from({length:5},()=>'ABCDEFGHJKMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*31)]).join('');
+  Object.assign(NET,{mode:'host',code,nick});const peer=new Peer(PFX+code,peerOpts());NET.peer=peer;
+  peer.on('open',showLobby);peer.on('error',e=>netError(e));
+  peer.on('connection',c=>{c.on('data',d=>hostData(c,d));c.on('close',()=>{if(NET.conn===c){NET.conn=null;tick('🔌 Dein Gegner hat die Verbindung verloren. Mit demselben Namen kann er wieder beitreten.')}})})}
+function showLobby(){sheet.dataset.lock='1';
+  openSheet(`<h2>Dein Raum ist offen</h2><p>Schick deinem Gegner diesen Code oder den Link. Sobald er beitritt, geht es los.</p><div class="code">${NET.code}</div>
+   <div style="display:flex;gap:8px"><button class="btn" id="lCopy">📋 Link kopieren</button>${navigator.share?'<button class="btn" id="lShare">📤 Teilen</button>':''}</div>
+   <p class="sm" style="word-break:break-all">${roomLink()}</p>
+   <div class="item">🏰 <b>${esc(NET.nick)}</b><span class="sm">– spielt Jericho (Weiß)</span></div><div class="item">⏳ <span class="sm">Warte auf deinen Gegner …</span></div>
+   <button class="btn" id="lCancel" style="width:100%">Raum schließen</button>`);
+  $('lCopy').onclick=()=>{try{navigator.clipboard.writeText(roomLink()).then(()=>tick('Link kopiert!'),()=>tick('Kopieren ging nicht – Code abschreiben.'))}catch(e){}};
+  if($('lShare'))$('lShare').onclick=()=>{navigator.share({title:'Schattenschach',text:`Spiel Schattenschach mit mir! Raum-Code: ${NET.code}`,url:roomLink()}).catch(()=>{})};
+  $('lCancel').onclick=()=>{delete sheet.dataset.lock;closeSheet();netReset()}}
+function hostData(c,d){if(!d||typeof d!=='object')return;
+  if(c===NET.conn){NET.seen=Date.now();if(NET.lost){NET.lost=false;tick('🔌 Verbindung wieder da.')}}
+  if(d.type==='ping')return;
+  if(d.type==='hello'){const nick=String(d.nick||'Gast').slice(0,14);
+    if(!NET.started){NET.conn=c;NET.guestNick=nick;NET.seen=Date.now();NET.started=true;ME='w';
+      newGame('online',{names:{w:NET.nick,b:nick}});ME='w';delete sheet.dataset.lock;closeSheet();$('start').classList.add('hidden');
+      c.send({type:'start',color:'b'});sync();render();tick(`⚔️ ${esc(nick)} ist da – das Spiel beginnt!`);sfx('win');return}
+    if(nick===NET.guestNick&&(!NET.conn||!NET.conn.open)){NET.conn=c;NET.seen=Date.now();c.send({type:'start',color:opp(ME)});sync();tick(`🔌 ${esc(nick)} ist wieder da!`);return}
+    c.send({type:'full'});return}
+  if(d.type==='act'&&c===NET.conn){const r=applyAction(opp(ME),d.a||{});if(r.err&&r.err!==1)c.send({type:'err',msg:r.err});sync();render()}}
+function hostRematch(){const hostWas=ME;ME=opp(hostWas);const names={[ME]:NET.nick,[opp(ME)]:NET.guestNick};newGame('online',{names});ME=opp(hostWas);
+  if(NET.conn&&NET.conn.open)NET.conn.send({type:'start',color:opp(ME)});sync();render();tick('🔁 Revanche – die Seiten werden getauscht!')}
+async function joinRoom(code,nick){netReset();connecting('Verbinde mit Raum '+code);try{await loadPeer()}catch(e){netError({});return}
+  Object.assign(NET,{mode:'guest',code,nick});const peer=new Peer(peerOpts());NET.peer=peer;peer.on('error',e=>netError(e));
+  peer.on('open',()=>{const c=peer.connect(PFX+code,{reliable:true});NET.hostConn=c;const to=setTimeout(()=>{if(!c.open)netError({})},15000);
+    c.on('open',()=>{clearTimeout(to);c.send({type:'hello',nick});NET.seen=Date.now()});
+    c.on('data',guestData);
+    c.on('close',()=>{if(NET.mode==='guest'){delete sheet.dataset.lock;openSheet(`<h2>Verbindung weg</h2><p>Die Verbindung zum Gastgeber ist abgebrochen. Mit demselben Namen und Code kannst du wieder beitreten.</p><button class="btn prim" id="cOk" style="width:100%">Zum Start</button>`);$('cOk').onclick=()=>{closeSheet();netReset();showStart();onlineMenu(code)}}})})}
+function guestData(d){if(!d||typeof d!=='object')return;NET.seen=Date.now();if(NET.lost){NET.lost=false;tick('🔌 Verbindung wieder da.')}
+  if(d.type==='ping')return;
+  if(d.type==='start'){ME=d.color;NET.started=true;overShown=false;sel=-1;delete sheet.dataset.lock;closeSheet();$('start').classList.add('hidden')}
+  else if(d.type==='state'){const before=G?G.log.length:0;G=JSON.parse(d.s);if(!G.over)overShown=false;if(G.log.length>before){const n=G.S;sfx(G.over&&G.over.type==='mate'?'mate':inCheck(n,n.t)?'check':'move')}sel=-1;render()}
+  else if(d.type==='err')tick(d.msg);
+  else if(d.type==='full'){delete sheet.dataset.lock;openSheet(`<h2>Raum ist besetzt</h2><p>In diesem Raum wird schon gespielt.</p><button class="btn" id="fOk" style="width:100%">OK</button>`);$('fOk').onclick=()=>{closeSheet();netReset()}}}
+
+/* ================= Start ================= */
+let pick={c:'b',diff:'normal'};try{const d=localStorage.getItem('ss_diff');if(DIFFN[d])pick.diff=d;const c=localStorage.getItem('ss_col');if(c)pick.c=c}catch(e){}
+function showStart(){$('start').classList.remove('hidden');$('bCont').classList.toggle('hidden',!hasSave())}
+function seg(id,key,store){$(id).querySelectorAll('.btn').forEach(b=>{b.classList.toggle('on',b.dataset.v===pick[key]);b.onclick=()=>{pick[key]=b.dataset.v;try{localStorage.setItem(store,b.dataset.v)}catch(e){}$(id).querySelectorAll('.btn').forEach(x=>x.classList.toggle('on',x===b))}})}
+seg('segC','c','ss_col');seg('segD','diff','ss_diff');
+$('hero').innerHTML=pieceSVG('bN')+pieceSVG('bQ','big')+pieceSVG('wK','big')+pieceSVG('wN');
+$('bAI').onclick=()=>{netReset();const h=pick.c==='r'?(Math.random()<.5?'w':'b'):pick.c;newGame('ai',{diff:pick.diff,human:h});ME=h;$('start').classList.add('hidden');save();render();aiTurn();
+  tick(h==='b'?'Du führst Nevermore (Schwarz). Jericho zieht zuerst.':'Du führst Jericho (Weiß) und ziehst zuerst.')};
+$('bLocal').onclick=()=>{netReset();newGame('local');ME='w';$('start').classList.add('hidden');save();render()};
+$('bCont').onclick=()=>{try{netReset();G=JSON.parse(localStorage.getItem(SAVE));ME=G.mode==='ai'?G.human:'w';sel=-1;busy=false;overShown=false;$('start').classList.add('hidden');render();aiTurn();tick('Partie geladen.')}catch(e){tick('Spielstand konnte nicht geladen werden.')}};
+$('bOnline').onclick=()=>onlineMenu();
+$('bHelp').onclick=showCast;
+window.addEventListener('resize',()=>G&&render());
+showStart();
+{const rc=new URLSearchParams(location.search).get('raum');if(rc)onlineMenu(rc.toUpperCase().slice(0,5))}
+</script>
+</body>
+</html>
