@@ -9,7 +9,7 @@ const r2=v=>Math.round(v*100)/100,esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'
 function peerOpts(){const u=new URLSearchParams(location.search),o={debug:0};if(u.get('peerhost')){o.host=u.get('peerhost');o.port=+u.get('peerport')||9000;o.path='/';o.secure=false}return o}
 function loadPeer(){return window.Peer?Promise.resolve():new Promise((res,rej)=>{const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=res;s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
 function netPanel(html){$('overlay').classList.remove('hidden');$('panel').innerHTML=html}
-function netReset(){try{if(NET.peer)NET.peer.destroy()}catch(e){}Object.assign(NET,{on:false,host:false,client:false,peer:null,hostConn:null,players:[],playing:false,fx:[],lobby:null,code:''});NET.map.clear();me=0}
+function netReset(){try{if(NET.peer)NET.peer.destroy()}catch(e){}Object.assign(NET,{on:false,host:false,client:false,peer:null,hostConn:null,players:[],playing:false,fx:[],lobby:null,code:'',pz:false});NET.map.clear();me=0;pzShow(false)}
 NET.leave=function(){netReset();sides=[];ents=[];paused=true;$('overlay').classList.add('hidden');$('start').classList.remove('hidden')};
 function netError(e,txt){const t=txt||(e&&e.type==='peer-unavailable'?'Diesen Raum gibt es nicht (mehr). Bitte prüfe den Code.':e&&e.type==='unavailable-id'?'Der Raum-Code ist schon vergeben. Bitte noch einmal versuchen.':'Die Verbindung hat nicht geklappt. Bitte prüfe dein Internet und versuche es noch einmal.');
   netReset();sides=[];ents=[];paused=true;$('start').classList.remove('hidden');netPanel(`<h2>🔌 Verbindung</h2><p>${t}</p><button class="sbtn" id="nBack">Zurück</button>`);$('nBack').onclick=()=>$('overlay').classList.add('hidden')}
@@ -70,7 +70,7 @@ function hostData(c,d){if(!d||typeof d!=='object')return;const p=NET.players.fin
     NET.players.push({nick:String(d.nick||'Spieler').slice(0,14),fac:d.fac==='mutant'?'mutant':'bunker',conn:c,seen:performance.now()});lobbySync()}
   else if(!p)return;
   else if(d.t==='fac'&&!NET.playing){p.fac=d.fac==='mutant'?'mutant':'bunker';lobbySync()}
-  else if(d.t==='c'&&NET.playing&&p.sid!=null)doCmd(p.sid,d.c)}
+  else if(d.t==='c'&&NET.playing&&p.sid!=null){if(Array.isArray(d.c)&&d.c[0]==='pause')NET.setPause(!NET.pz,p.sid);else doCmd(p.sid,d.c)}}
 function dropConn(c){const i=NET.players.findIndex(x=>x.conn===c);if(i<0)return;const p=NET.players[i];
   if(NET.playing&&p.sid!=null&&sides[p.sid]){const S=sides[p.sid];p.conn=null;if(!S.dead){S.human=false;const m=`${p.nick} hat das Spiel verlassen – der Computer übernimmt.`;say(m,'bad');for(const q of NET.players)if(q.conn&&q.conn.open)q.conn.send({t:'say',a:[m,'bad']})}}
   else{NET.players.splice(i,1);lobbySync()}}
@@ -78,7 +78,7 @@ NET.mkSides=function(mk){const s=NET.set,coop=s.mode==='coop',other=f=>f==='bunk
   NET.players.forEach((p,i)=>{const S=mk(i,p.fac,true);S.name=`${p.nick} (${CNAME[i]})`;S.team=coop?0:i;p.sid=i;sides.push(S)});
   for(let k=0;k<s.ais;k++){const i=sides.length,S=mk(i,k%2?NET.players[0].fac:other(NET.players[0].fac),false);S.team=coop?1:i;sides.push(S)}};
 function netStart(){const s=NET.set;NET.players=NET.players.filter(p=>!p.conn||p.conn.open);if(lobbyOK()){showLobby();return}
-  cfg.fac=NET.players[0].fac;cfg.diff=s.diff;cfg.size=s.size;cfg.players=NET.players.length+s.ais;cfg.reveal=false;cfg.demo=false;speed=1;me=0;NET.playing=true;NET.fx=[];NET.acc=0;
+  cfg.fac=NET.players[0].fac;cfg.diff=s.diff;cfg.size=s.size;cfg.players=NET.players.length+s.ais;cfg.reveal=false;cfg.demo=false;speed=1;me=0;NET.playing=true;NET.fx=[];NET.acc=0;NET.pz=false;pzShow(false);
   $('overlay').classList.add('hidden');$('start').classList.add('hidden');try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
   newGame();const pub=pubSides(),tl=Array.from(tiles);
   for(const p of NET.players)if(p.conn&&p.conn.open)p.conn.send({t:'start',me:p.sid,cfg:{size:MW,diff:cfg.diff,players:cfg.players},tiles:tl,sides:pub});
@@ -91,7 +91,7 @@ NET.snap=function(dt){if(!NET.playing)return;if((NET.acc+=dt)<.11)return;NET.acc
     else E.push([e.id,1,e.type,e.side,e.tx,e.ty,Math.ceil(e.hp),Math.round(e.max),r2(e.tdir),fl|(B[e.type].cd&&e.cd>B[e.type].cd-.25?4:0)|(e.opened?32:0),e.lvl,e.up?[r2(e.up.t),e.up.total]:0,Math.round(e.charge||0),Math.round(e.oil||0),Math.round(e.scrap||0),Math.round(e.spent||0),e.rally?[Math.round(e.rally.x),Math.round(e.rally.y)]:0])}
   const d=JSON.stringify({t:r2(time),E,S:pubSides(),P:projs.map(p=>[Math.round(p.x),Math.round(p.y),Math.round(p.tx),Math.round(p.ty),p.wpn,Math.round(p.d0||0),p.spd]),N:nukes.map(n=>[Math.round(n.x),Math.round(n.y),r2(n.t),n.max,n.fac]),sh:r2(shake),F:NET.fx});NET.fx=[];NET.fxS=0;
   const now=performance.now();for(const p of NET.players)if(p.conn){if(p.conn.open)p.conn.send({t:'s',d});if(now-(p.seen||now)>20000)dropConn(p.conn)}};
-NET.toLobby=function(){NET.playing=false;paused=true;for(const p of NET.players)p.sid=null;NET.players=NET.players.filter(p=>!p.conn||p.conn.open);lobbySync()};
+NET.toLobby=function(){NET.playing=false;NET.pz=false;pzShow(false);paused=true;for(const p of NET.players)p.sid=null;NET.players=NET.players.filter(p=>!p.conn||p.conn.open);lobbySync()};
 
 /* ---------- Mitspieler ---------- */
 NET.cmd=function(c){if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:'c',c})};
@@ -100,13 +100,14 @@ function guestData(d){if(!d||typeof d!=='object')return;NET.seen=performance.now
   else if(d.t==='full')netError({},d.why)
   else if(d.t==='start')clientStart(d)
   else if(d.t==='s'&&NET.playing){try{applySnap(JSON.parse(d.d))}catch(e){console.error(e)}}
+  else if(d.t==='pz'){const was=NET.pz;NET.pz=d.on;paused=d.on;pzShow(d.on,d.msg);if(was&&!d.on)say(d.msg,'',true)}
   else if(d.t==='say')say(d.a[0],d.a[1],d.a[2])}
 function clientStart(d){me=d.me;cfg.size=d.cfg.size;cfg.diff=d.cfg.diff;cfg.players=d.cfg.players;cfg.reveal=false;cfg.demo=false;speed=1;hintT=12;
   nukes=[];supMode=null;shake=0;MW=MH=d.cfg.size;ents=[];projs=[];tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};time=0;over=false;placing=null;atkMode=false;msgT={};NET.map.clear();NET.first=true;
   tiles=Uint8Array.from(d.tiles);occ=new Int32Array(MW*MH);expl=new Uint8Array(MW*MH);vis=new Uint8Array(MW*MH);wallMap=new Uint8Array(MW*MH);
   sides=d.sides;cfg.fac=sides[me].fac;srand(MW*7919+tiles[MW+5]);renderTerrain();iconCacheClear();
   $('overlay').classList.add('hidden');$('start').classList.add('hidden');try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
-  resize();zoom=CW>700?1.35:1.1;clampCam();NET.playing=true;paused=false;lockSig='';buildUI();
+  resize();zoom=CW>700?1.35:1.1;clampCam();NET.playing=true;NET.pz=false;pzShow(false);paused=false;lockSig='';buildUI();
   say(sides.some(S=>S.id!==me&&S.team===sides[me].team)?'Ihr spielt zusammen gegen den Computer':'Jeder gegen jeden – viel Glück!')}
 function applySnap(s){const S0=sides[me],wasDone=S0.bq&&S0.bq.done;time=s.t;
   s.S.forEach((o,i)=>{if(sides[i])Object.assign(sides[i],o)});const seen=new Set();
@@ -129,7 +130,7 @@ function applySnap(s){const S0=sides[me],wasDone=S0.bq&&S0.bq.done;time=s.t;
   if(NET.first){NET.first=false;for(const e of ents){e.x=e.nx??e.x;e.y=e.ny??e.y}home();computeVis()}
   if(S0.bq&&S0.bq.done&&!wasDone){tab='b';document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t==='b'));buildUI()}
   if(placing&&!(S0.bq&&S0.bq.done))placing=null}
-NET.tick=function(dt){if(!NET.playing)return;time+=dt;const k=Math.min(1,dt*14);
+NET.tick=function(dt){if(!NET.playing||NET.pz)return;time+=dt;const k=Math.min(1,dt*14);
   for(const e of ents){e.anim+=dt;if(e.k==='u'){e.x+=(e.nx-e.x)*k;e.y+=(e.ny-e.y)*k}}
   for(const p of projs){const d=dist(p.x,p.y,p.tx,p.ty),st=p.spd*dt;if(d>st){p.x+=(p.tx-p.x)/d*st;p.y+=(p.ty-p.y)/d*st}}
   for(const n of nukes)n.t=Math.max(0,n.t-dt);if(shake>0)shake=Math.max(0,shake-dt);
@@ -145,7 +146,57 @@ NET.tick=function(dt){if(!NET.playing)return;time+=dt;const k=Math.min(1,dt*14);
 try{const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),50)'],{type:'text/javascript'})));let lt=0;
   requestAnimationFrame(function f(){NET.raf=performance.now();requestAnimationFrame(f)});
   w.onmessage=()=>{const now=performance.now(),dt=Math.min(.1,(now-lt)/1000);lt=now;
-    if((document.hidden||now-(NET.raf||0)>300)&&NET.host&&NET.playing&&sides.length){time+=dt;step(dt);NET.snap(dt)}
+    if((document.hidden||now-(NET.raf||0)>300)&&NET.host&&NET.playing&&!NET.pz&&sides.length){time+=dt;step(dt);NET.snap(dt)}
+    if(NET.host&&NET.playing&&NET.pz&&now-(NET.pzAt||0)>1000){NET.pzAt=now;for(const p of NET.players)if(p.conn&&p.conn.open)p.conn.send({t:'pz',on:true,msg:NET.pzMsg})}
     if(NET.client&&now-(NET.pingAt||0)>3000){NET.pingAt=now;if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:'p'})}}}catch(e){}
 $('bOnline').onclick=()=>onlineMenu();
 {const rc=new URLSearchParams(location.search).get('raum');if(rc)onlineMenu(rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5))}
+
+/* ======================= Pause für alle (online) ======================= */
+function pzShow(on,msg){let b=$('pzB');if(!b){if(!on)return;b=document.createElement('div');b.id='pzB';b.style.cssText='position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:7;background:#120d08ee;border:3px solid #ffcf5a;border-radius:12px;padding:16px 26px;font-size:22px;font-weight:900;color:#ffcf5a;text-align:center;pointer-events:none';$('view').appendChild(b)}
+  b.style.display=on?'block':'none';if(on)b.innerHTML='⏸ PAUSE<div style="font-size:14px;color:#f0e2c8;margin-top:6px">'+esc(msg||'')+'<br>Weiter mit der Taste P oder dem ⏸-Knopf oben links</div>'}
+NET.setPause=function(on,sid){if(!NET.host||!NET.playing)return;NET.pz=on;paused=on;const nm=sides[sid]?sides[sid].name:'Jemand',msg=on?`${nm} hat das Spiel angehalten`:`${nm} lässt das Spiel weiterlaufen`;NET.pzMsg=msg;pzShow(on,msg);if(!on)say(msg,'',true);
+  for(const p of NET.players)if(p.conn&&p.conn.open)p.conn.send({t:'pz',on,msg})};
+{const a0=act;act=function(c){if(c[0]==='pause'){if(NET.host)NET.setPause(!NET.pz,me);else if(NET.client)NET.cmd(c);return}a0(c)}}
+window.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='p'&&NET.on&&NET.playing&&e.target.tagName!=='INPUT'){e.stopImmediatePropagation();act(['pause'])}},true);
+{const b=document.createElement('button');b.className='tbtn';b.textContent='⏸';b.title='Pause (P)';b.onclick=()=>{if(NET.on&&NET.playing)act(['pause']);else togglePause()};$('topbar').insertBefore(b,$('topbar').children[1])}
+
+/* ======================= Spielstand speichern und laden (Spiele gegen den Computer) ======================= */
+const SAVEK={man:'oedland-save-1',auto:'oedland-save-auto'};
+function saveInfo(slot){try{const s=localStorage.getItem(SAVEK[slot]);return s?JSON.parse(s.slice(0,s.indexOf('\n'))):null}catch(e){return null}}
+function saveGame(slot,quiet){if(!sides.length||NET.on||cfg.demo||over)return false;
+  const isE=v=>v&&typeof v==='object'&&v.k&&v.id!=null,ref=v=>isE(v)&&!v.dead?{$:v.id}:null;
+  const E=ents.filter(e=>!e.dead).map(e=>{const o={};for(const k in e){const v=e[k];if(k==='s'||k==='path')continue;o[k]=isE(v)?ref(v):v}if(e.path)o.$p=1;return o});
+  const P=projs.map(p=>Object.assign({},p,{t:ref(p.t),src:ref(p.src)}));
+  const S=JSON.parse(JSON.stringify(sides,(k,v)=>k==='lastAtk'||k==='lastAtkU'?undefined:v));
+  const head={v:1,at:Date.now(),time:Math.round(time),fac:sides[me].fac,diff:cfg.diff,n:sides.length};
+  const body={cfg,MW,time,nextId,aiT,tiles:Array.from(tiles).join(''),expl:Array.from(expl).join(''),S,E,P,N:nukes,cam:[camX,camY,zoom]};
+  try{localStorage.setItem(SAVEK[slot],JSON.stringify(head)+'\n'+JSON.stringify(body))}catch(e){if(!quiet)say('Speichern hat nicht geklappt – der Speicher des Browsers ist voll oder gesperrt','bad',true);return false}
+  if(!quiet)say('💾 Spielstand gespeichert','',true);saveButtons();return true}
+function loadGame(slot){let d;try{const s=localStorage.getItem(SAVEK[slot]);d=JSON.parse(s.slice(s.indexOf('\n')+1))}catch(e){say('Dieser Spielstand lässt sich nicht laden','bad',true);return false}
+  if(NET.on)netReset();Object.assign(cfg,d.cfg);cfg.demo=false;me=0;MW=MH=d.MW;time=d.time;nextId=d.nextId;aiT=d.aiT||0;speed=1;
+  tiles=Uint8Array.from(d.tiles,Number);expl=Uint8Array.from(d.expl,Number);vis=new Uint8Array(MW*MH);occ=new Int32Array(MW*MH);wallMap=new Uint8Array(MW*MH);
+  sides=d.S;tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};nukes=d.N||[];supMode=null;shake=0;over=false;placing=null;atkMode=false;msgT={};hintT=28;
+  const map=new Map();ents=d.E.map(o=>{const e=Object.assign({},o);map.set(e.id,e);return e});
+  const fix=o=>{for(const k in o){const v=o[k];if(v&&typeof v==='object'&&'$' in v)o[k]=map.get(v.$)||null}};
+  for(const e of ents){fix(e);const had=e.$p;delete e.$p;
+    if(e.k==='u'){e.s=stat(e.side,e.type);e.path=null;if(had&&e.pgx!=null)reqPath(e,e.pgx,e.pgy)}
+    else{for(let y=e.ty;y<e.ty+e.h;y++)for(let x=e.tx;x<e.tx+e.w;x++)occ[y*MW+x]=e.id;if(e.type==='wall')wallMap[e.ty*MW+e.tx]=e.side+1}}
+  projs=(d.P||[]).map(p=>{fix(p);return p});
+  renderTerrain();iconCacheClear();$('overlay').classList.add('hidden');$('start').classList.add('hidden');try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}
+  resize();camX=d.cam[0];camY=d.cam[1];zoom=d.cam[2];clampCam();computeVis();tab='b';document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t==='b'));lockSig='';buildUI();paused=false;
+  say('📂 Spielstand geladen','',true);return true}
+function saveLabel(slot){const i=saveInfo(slot);if(!i)return'';const dt=new Date(i.at);return`${slot==='man'?'gespeichert':'automatisch gesichert'} am ${dt.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} um ${dt.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · ${FAC[i.fac]?FAC[i.fac].name:''} · Spielzeit ${Math.floor(i.time/60)}:${String(i.time%60).padStart(2,'0')}`}
+function saveButtons(){document.querySelectorAll('.svB').forEach(b=>b.remove());for(const slot of['auto','man']){if(!saveInfo(slot))continue;const b=document.createElement('button');b.className='big sec svB';b.style.textTransform='none';
+  b.textContent='📂 Weiterspielen – '+saveLabel(slot);b.onclick=()=>loadGame(slot);$('bOnline').after(b)}}
+function loadRow(){return(saveInfo('man')?'<button class="sbtn" id="mLoad" title="'+esc(saveLabel('man'))+'">📂 Gespeicherten Stand laden</button>':'')+(saveInfo('auto')?'<button class="sbtn" id="mLoadA" title="'+esc(saveLabel('auto'))+'">📂 Automatische Sicherung laden</button>':'')}
+function loadRowOn(){if($('mLoad'))$('mLoad').onclick=()=>loadGame('man');if($('mLoadA'))$('mLoadA').onclick=()=>loadGame('auto')}
+{const m0=showMenu;showMenu=function(){m0();const p=$('panel'),r=document.createElement('div');r.className='row';
+    r.innerHTML=NET.on?`<button class="sbtn" id="mPz">${NET.pz?'▶ Weiter für alle':'⏸ Pause für alle'}</button>`:'<button class="sbtn" id="mSave">💾 Spielstand speichern</button>'+loadRow();
+    p.insertBefore(r,p.children[2]||null);loadRowOn();
+    if($('mPz'))$('mPz').onclick=()=>{act(['pause']);$('overlay').classList.add('hidden')};
+    if($('mSave'))$('mSave').onclick=()=>{paused=false;const ok=saveGame('man');paused=true;if(ok)showMenu()}};
+  const e0=endGame;endGame=function(win,why){const was=over;e0(win,why);if(was||NET.on||win||!loadRow())return;const r=document.createElement('div');r.className='row';r.innerHTML=loadRow();$('panel').appendChild(r);loadRowOn()}}
+setInterval(()=>{if(sides.length&&!paused&&time>45&&$('start').classList.contains('hidden'))saveGame('auto',true)},120000);
+window.addEventListener('pagehide',()=>{if(sides.length&&time>45&&$('start').classList.contains('hidden'))saveGame('auto',true)});
+saveButtons();
