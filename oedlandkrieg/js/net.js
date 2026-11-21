@@ -90,7 +90,7 @@ NET.snap=function(dt){if(!NET.playing)return;if((NET.acc+=dt)<.11)return;NET.acc
     if(e.k==='u')E.push([e.id,0,e.type,e.side,Math.round(e.x),Math.round(e.y),Math.ceil(e.hp),Math.round(e.max),r2(e.dir),r2(e.tdir),fl|(e.path?1:0)|(e.tgt?2:0)|(e.cd>e.s.cd-.25?4:0),e.load|0,e.vet,e.kills]);
     else E.push([e.id,1,e.type,e.side,e.tx,e.ty,Math.ceil(e.hp),Math.round(e.max),r2(e.tdir),fl|(B[e.type].cd&&e.cd>B[e.type].cd-.25?4:0)|(e.opened?32:0),e.lvl,e.up?[r2(e.up.t),e.up.total]:0,Math.round(e.charge||0),Math.round(e.oil||0),Math.round(e.scrap||0),Math.round(e.spent||0),e.rally?[Math.round(e.rally.x),Math.round(e.rally.y)]:0])}
   const d=JSON.stringify({t:r2(time),E,S:pubSides(),P:projs.map(p=>[Math.round(p.x),Math.round(p.y),Math.round(p.tx),Math.round(p.ty),p.wpn,Math.round(p.d0||0),p.spd]),N:nukes.map(n=>[Math.round(n.x),Math.round(n.y),r2(n.t),n.max,n.fac]),sh:r2(shake),F:NET.fx});NET.fx=[];NET.fxS=0;
-  const now=performance.now();for(const p of NET.players)if(p.conn){if(p.conn.open)p.conn.send({t:'s',d});if(now-(p.seen||now)>10000)dropConn(p.conn)}};
+  const now=performance.now();for(const p of NET.players)if(p.conn){if(p.conn.open)p.conn.send({t:'s',d});if(now-(p.seen||now)>20000)dropConn(p.conn)}};
 NET.toLobby=function(){NET.playing=false;paused=true;for(const p of NET.players)p.sid=null;NET.players=NET.players.filter(p=>!p.conn||p.conn.open);lobbySync()};
 
 /* ---------- Mitspieler ---------- */
@@ -134,17 +134,18 @@ NET.tick=function(dt){if(!NET.playing)return;time+=dt;const k=Math.min(1,dt*14);
   for(const p of projs){const d=dist(p.x,p.y,p.tx,p.ty),st=p.spd*dt;if(d>st){p.x+=(p.tx-p.x)/d*st;p.y+=(p.ty-p.y)/d*st}}
   for(const n of nukes)n.t=Math.max(0,n.t-dt);if(shake>0)shake=Math.max(0,shake-dt);
   updParts(dt);for(const m of marks)m.l-=dt*1.5;marks=marks.filter(m=>m.l>0);if((visT+=dt)>.2){visT=0;computeVis()}
-  hints(dt);checkEnd();if(performance.now()-NET.seen>12000&&NET.client)netError({},'Die Verbindung zum Gastgeber ist abgebrochen.');
-  if((NET.pingT=(NET.pingT||0)+dt)>3){NET.pingT=0;if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:'p'})}};
+  hints(dt);checkEnd();if(performance.now()-NET.seen>12000&&NET.client)netError({},'Die Verbindung zum Gastgeber ist abgebrochen.');};
 
 /* ---------- Effekte für die Mitspieler mitschreiben ---------- */
 {const R=v=>Math.round(v),enc={boom:a=>[R(a[0]),R(a[1]),r2(a[2]),a[3]?1:0,a[4]?1:0],flash:a=>[R(a[0]),R(a[1]),R(a[2]),a[3]],floatTxt:a=>[R(a[0]),R(a[1]),a[2],a[3]],decalBlood:a=>[R(a[0]),R(a[1]),a[2]],decalScorch:a=>[R(a[0]),R(a[1]),R(a[2])],
     decalWreck:a=>[R(a[0].x),R(a[0].y),r2(a[0].dir),a[0].s.r],decalRubble:a=>[a[0].tx,a[0].ty,a[0].w,a[0].h],sfx:a=>a[1]==null||NET.fxS++>10?null:[a[0],R(a[1]),R(a[2])]};
   for(const nm in enc){const f=window[nm];window[nm]=function(...a){if(NET.host&&NET.playing&&!NET.fxDepth&&NET.fx.length<220){const e=enc[nm](a);if(e)NET.fx.push([nm,...e])}NET.fxDepth++;try{return f.apply(this,a)}finally{NET.fxDepth--}}}
   const f1=fire;fire=function(a,t){const n=tracers.length;f1(a,t);if(NET.host&&NET.playing)for(let i=n;i<tracers.length&&NET.fx.length<220;i++){const q=tracers[i];NET.fx.push(['tr',R(q.x1),R(q.y1),R(q.x2),R(q.y2),q.l,q.c,q.w||0])}}}
-/* ---------- Gastgeber rechnet weiter, auch wenn sein Fenster im Hintergrund ist ---------- */
+/* ---------- Gastgeber rechnet weiter, auch wenn sein Fenster im Hintergrund ist; Mitspieler melden sich alle 3 Sekunden ---------- */
 try{const w=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),50)'],{type:'text/javascript'})));let lt=0;
-  w.onmessage=()=>{const now=performance.now(),dt=Math.min(.1,(now-lt)/1000);lt=now;if(document.hidden&&NET.host&&NET.playing&&sides.length){time+=dt;step(dt);NET.snap(dt)}
-    if(document.hidden&&NET.client&&NET.playing&&(NET.pingT=(NET.pingT||0)+dt)>3){NET.pingT=0;if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:'p'})}}}catch(e){}
+  requestAnimationFrame(function f(){NET.raf=performance.now();requestAnimationFrame(f)});
+  w.onmessage=()=>{const now=performance.now(),dt=Math.min(.1,(now-lt)/1000);lt=now;
+    if((document.hidden||now-(NET.raf||0)>300)&&NET.host&&NET.playing&&sides.length){time+=dt;step(dt);NET.snap(dt)}
+    if(NET.client&&now-(NET.pingAt||0)>3000){NET.pingAt=now;if(NET.hostConn&&NET.hostConn.open)NET.hostConn.send({t:'p'})}}}catch(e){}
 $('bOnline').onclick=()=>onlineMenu();
 {const rc=new URLSearchParams(location.search).get('raum');if(rc)onlineMenu(rc.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,5))}
