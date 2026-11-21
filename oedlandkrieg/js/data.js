@@ -55,7 +55,7 @@ const FAC={
 // Einheitenart für Heilung: biologisch?
 const organic=u=>u.s.arm==='inf'||(sides[u.side].fac==='mutant'&&u.type!=='oil'&&u.type!=='elite');
 const DIFF={easy:{inc:.5,first:480,wave:3,grow:1,mix:0,maxw:10,think:1.5,gap:150,cap:18,name:'Leicht'},normal:{inc:.75,first:340,wave:4,grow:1,mix:.08,maxw:16,think:1.15,gap:110,cap:28,name:'Normal'},hard:{inc:.95,first:240,wave:5,grow:2,mix:.18,maxw:22,think:1,gap:80,cap:40,name:'Schwer'},brutal:{inc:1.25,first:170,wave:6,grow:2,mix:.28,maxw:28,think:.9,gap:60,cap:55,name:'Brutal'}};
-const COL=['#e6a92a','#c8352c'];
+const COL=['#e6a92a','#c8352c','#3a8ee0','#a45ad8'],CNAME=['Gelb','Rot','Blau','Lila'];
 const BUPG=['ref','der','bar','fac','tow','pow','ctow','rtow','rep','scr'];const bupCost=b=>Math.round(B[b.type].cost*.6*b.lvl),bupTime=b=>8+b.lvl*6;
 const RES={infW:{at:'bar',n:'Waffen Fußtruppen',ic:'🔫',c:[350,700],t:[18,26]},infA:{at:'bar',n:'Panzerung Fußtruppen',ic:'🛡',c:[300,600],t:[16,24]},vehW:{at:'fac',n:'Waffen Fahrzeuge & Bestien',ic:'💥',c:[500,1000],t:[22,30]},vehA:{at:'fac',n:'Panzerung Fahrzeuge & Bestien',ic:'🛡',c:[450,900],t:[20,28]}};
 const ROM=['','I','II'];
@@ -63,7 +63,8 @@ const isInf=u=>u.s.arm==='inf';const techW=u=>u.k==='u'?1+.15*(sides[u.side].tec
 function stat(side,type){return Object.assign({},U[type],FAC[sides[side].fac].mod[type]||{})}
 
 /* ======================= Zustand ======================= */
-let tiles,occ,expl,vis,wallMap,ents=[],nextId=1,sides=[],time=0,speed=1,paused=true,over=false,cfg={fac:'bunker',diff:'normal',size:64};
+let me=0;const NET={on:false,host:false,client:false};
+let tiles,occ,expl,vis,wallMap,ents=[],nextId=1,sides=[],time=0,speed=1,paused=true,over=false,cfg={fac:'bunker',diff:'normal',size:64,players:2};
 let terrainC,decalC,decalX,miniBase,camX=0,camY=0,zoom=1,sel=[],placing=null,atkMode=false,boxMode=false,groups={};
 let projs=[],tracers=[],parts=[],pathQ=[],visT=0,aiT=0,msgT={},nukes=[],supMode=null,shake=0,pwT=0;
 const power=S=>{let p=0,u=0;for(const b of ents)if(!b.dead&&b.k==='b'&&b.side===S.id){const w=B[b.type].pw||0;if(w<0)p-=w*(1+(b.lvl-1)*.5);else u+=w}return{p,u,low:u>p}};
