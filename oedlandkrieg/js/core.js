@@ -5,17 +5,19 @@ function noise2(w,h,sc){const gw=Math.ceil(w/sc)+2,gh=Math.ceil(h/sc)+2,g=[];for
 function genMap(){srand((Math.random()*1e9)|0);tiles=new Uint8Array(MW*MH);occ=new Int32Array(MW*MH);expl=new Uint8Array(MW*MH);vis=new Uint8Array(MW*MH);wallMap=new Uint8Array(MW*MH);
   const n1=noise2(MW,MH,7),n2=noise2(MW,MH,3);
   for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const v=n1(x,y)*.75+n2(x,y)*.25;if(v>.66||x===0||y===0||x===MW-1||y===MH-1)tiles[y*MW+x]=1}
-  const m=8,swap=sr()<.5;const sA=swap?{x:MW-m-2,y:m}:{x:m,y:MH-m-2},sB=swap?{x:m,y:MH-m-2}:{x:MW-m-2,y:m};
+  const m=8,NP=cfg.players||2,cs=[{x:m,y:MH-m-2},{x:MW-m-2,y:m},{x:m,y:m},{x:MW-m-2,y:MH-m-2}];let starts;
+  if(NP===2)starts=sr()<.5?[cs[1],cs[0]]:[cs[0],cs[1]];else{for(let i=3;i>0;i--){const j=(sr()*(i+1))|0;[cs[i],cs[j]]=[cs[j],cs[i]]}starts=cs.slice(0,NP)}
+  const sA=starts[0];
   const clear=(cx,cy,r)=>{for(let y=cy-r;y<=cy+r;y++)for(let x=cx-r;x<=cx+r;x++)if(x>0&&y>0&&x<MW-1&&y<MH-1&&Math.hypot(x-cx,y-cy)<=r)tiles[y*MW+x]=0};
-  clear(sA.x,sA.y,9);clear(sB.x,sB.y,9);
+  for(const s of starts)clear(s.x,s.y,9);
   const fields=[],place=(x,y)=>{x=clamp(x|0,2,MW-4);y=clamp(y|0,2,MH-4);if(fields.some(f=>Math.abs(f.x-x)<5&&Math.abs(f.y-y)<5))return;clear(x+1,y+1,3);fields.push({x,y})};
-  for(const s of[sA,sB]){const dx=Math.sign(MW/2-s.x),dy=Math.sign(MH/2-s.y);place(s.x+dx*6,s.y-dy*1);place(s.x-dx*2,s.y+dy*6);place(s.x+dx*7,s.y+dy*7)}
-  const mid=Math.round(MW/2),cnt=MW>70?7:MW>50?5:3;
+  for(const s of starts){const dx=Math.sign(MW/2-s.x),dy=Math.sign(MH/2-s.y);place(s.x+dx*6,s.y-dy*1);place(s.x-dx*2,s.y+dy*6);place(s.x+dx*7,s.y+dy*7)}
+  const mid=Math.round(MW/2),cnt=(MW>70?7:MW>50?5:3)+(NP-2);
   for(let i=0;i<cnt;i++){const a=i/cnt*Math.PI*2+sr();place(mid+Math.cos(a)*MW*.18,mid+Math.sin(a)*MH*.18)}
   for(let i=0;i<cnt;i++)place(4+sr()*(MW-8),4+sr()*(MH-8));
   for(const f of fields)for(let y=f.y;y<f.y+2;y++)for(let x=f.x;x<f.x+2;x++)tiles[y*MW+x]=2;
   const scraps=[],placeS=(x,y)=>{x=clamp(x|0,2,MW-4);y=clamp(y|0,2,MH-4);if(fields.some(f=>Math.abs(f.x-x)<4&&Math.abs(f.y-y)<4)||scraps.some(f=>Math.abs(f.x-x)<5&&Math.abs(f.y-y)<5))return;clear(x+1,y+1,2);scraps.push({x,y})};
-  for(const s0 of[sA,sB]){const dx=Math.sign(MW/2-s0.x),dy=Math.sign(MH/2-s0.y);placeS(s0.x-dx*1,s0.y-dy*7)}
+  for(const s0 of starts){const dx=Math.sign(MW/2-s0.x),dy=Math.sign(MH/2-s0.y);placeS(s0.x-dx*1,s0.y-dy*7)}
   for(let i=0;i<cnt+1;i++)placeS(4+sr()*(MW-8),4+sr()*(MH-8));
   for(const f of scraps)for(let y=f.y;y<f.y+2;y++)for(let x=f.x;x<f.x+2;x++)tiles[y*MW+x]=3;
   const techs=[];for(let i=0;i<(MW>70?3:2);i++){const a=sr()*Math.PI*2,r=MW*.08+sr()*MW*.12;const x=clamp((mid+Math.cos(a)*r)|0,4,MW-6),y=clamp((mid+Math.sin(a)*r)|0,4,MH-6);
@@ -23,8 +25,8 @@ function genMap(){srand((Math.random()*1e9)|0);tiles=new Uint8Array(MW*MH);occ=n
   // Verbindung sicherstellen
   const reach=()=>{const seen=new Uint8Array(MW*MH),q=[sA.y*MW+sA.x];seen[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i/MW)|0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const j=(y+dy)*MW+x+dx;if(!seen[j]&&tiles[j]!==1){seen[j]=1;q.push(j)}}}return seen};
   const carve=(ax,ay,bx,by)=>{let x=ax,y=ay;let g=0;while((x!==bx||y!==by)&&g++<500){if(sr()<.5&&x!==bx)x+=Math.sign(bx-x);else if(y!==by)y+=Math.sign(by-y);else x+=Math.sign(bx-x);for(let yy=y-1;yy<=y+1;yy++)for(let xx=x-1;xx<=x+1;xx++)if(xx>0&&yy>0&&xx<MW-1&&yy<MH-1&&tiles[yy*MW+xx]===1)tiles[yy*MW+xx]=0}};
-  for(const t of[sB,...fields,...scraps,...techs.map(t=>({x:t.x,y:t.y-1}))]){const s=reach();if(!s[t.y*MW+t.x])carve(sA.x,sA.y,t.x,t.y)}
-  return{sA,sB,fields,techs,scraps}}
+  for(const t of[...starts.slice(1),...fields,...scraps,...techs.map(t=>({x:t.x,y:t.y-1}))]){const s=reach();if(!s[t.y*MW+t.x])carve(sA.x,sA.y,t.x,t.y)}
+  return{starts,fields,techs,scraps}}
 
 /* ======================= Wegfindung ======================= */
 function findPath(sx,sy,gx,gy){sx=clamp(sx,0,MW-1);sy=clamp(sy,0,MH-1);
@@ -50,7 +52,7 @@ function nearestFree(x,y,R){for(let r=0;r<=R;r++)for(let dy=-r;dy<=r;dy++)for(le
 
 /* ======================= Objekte ======================= */
 function addUnit(side,type,x,y){const s=stat(side,type);const u={id:nextId++,k:'u',type,side,x,y,hp:s.hp,max:s.hp,s,dir:sr()*6,tdir:0,path:null,pi:0,ord:null,tgt:null,cd:sr(),vet:0,kills:0,acq:0,anim:rnd()*6,gx:x,gy:y,load:0,st:'idle',stT:0,repath:0};
-  ents.push(u);if(side===0)sides[0].stats.made++;return u}
+  ents.push(u);if(side>=0)sides[side].stats.made++;return u}
 function addBld(side,type,tx,ty){const d=B[type];const b={id:nextId++,k:'b',type,side,tx,ty,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:d.hp,max:d.hp,cd:0,tgt:null,anim:0,born:time,rally:null,oil:type==='der'?9000:0,opened:false,tdir:1.5,lvl:1,spent:d.cost||0,up:null};
   if(side>=0&&b.type!=='tech'){const lvl=sides[side].lvl;if(lvl>1&&type==='hq'){b.max=b.hp=d.hp*1.3}if(sides[side].human){b.max*=1.15;b.hp=b.max}}
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++)occ[y*MW+x]=b.id;if(type==='wall')wallMap[ty*MW+tx]=side+1;
@@ -59,9 +61,13 @@ function addBld(side,type,tx,ty){const d=B[type];const b={id:nextId++,k:'b',type
   ents.push(b);return b}
 const alive=e=>e&&!e.dead;
 const own=(s,t)=>ents.filter(e=>!e.dead&&e.k==='b'&&e.side===s&&(!t||e.type===t));
+const hostile=(a,b)=>a>=0&&b>=0&&a!==b&&sides[a].team!==sides[b].team;
+const foes=s=>ents.filter(e=>!e.dead&&e.k==='b'&&hostile(e.side,s));
+function tell(sid,txt,cls,quiet){if(sid===me)say(txt,cls,quiet);else if(NET.host)NET.tell(sid,txt,cls,quiet)}
+function act(c){if(NET.client)NET.cmd(c);else doCmd(me,c)}
 const units=(s,t)=>ents.filter(e=>!e.dead&&e.k==='u'&&e.side===s&&(!t||e.type===t));
 function edgeDist(a,b){if(b.k==='b'){const x0=b.tx*T,y0=b.ty*T,x1=x0+b.w*T,y1=y0+b.h*T;const dx=Math.max(x0-a.x,0,a.x-x1),dy=Math.max(y0-a.y,0,a.y-y1);return Math.hypot(dx,dy)}return Math.max(0,dist(a.x,a.y,b.x,b.y)-(b.s?b.s.r:0))}
-const isVisTo=(side,e)=>side!==0||cfg.reveal||(e.k==='b'?expl[((e.ty+(e.h>>1))*MW+e.tx+(e.w>>1))]:vis[((e.y/T)|0)*MW+((e.x/T)|0)]);
+const isVisTo=(side,e)=>side!==me||cfg.reveal||(e.k==='b'?expl[((e.ty+(e.h>>1))*MW+e.tx+(e.w>>1))]:vis[((e.y/T)|0)*MW+((e.x/T)|0)]);
 
 /* ======================= Befehle ======================= */
 function cmdMove(us,wx,wy,ord){const n=us.length;if(!n)return;const tx=clamp((wx/T)|0,0,MW-1),ty=clamp((wy/T)|0,0,MH-1);
@@ -74,7 +80,7 @@ function processPaths(){let n=0;while(pathQ.length&&n++<20){const u=pathQ.shift(
 
 /* ======================= Kampf ======================= */
 function hurt(t,dmg,wpn,src){if(!alive(t)||t.type==='tech')return;const arm=t.k==='b'?'bld':t.s.arm;let d=dmg*ARM[wpn][arm]*(src&&src.vet?1+src.vet*.2:1)*(src&&src.side>=0?techW(src):1)*(src&&src.k==='b'&&src.lvl>1?1+(src.lvl-1)*.4:1)/(t.k==='u'?techA(t):1);
-  t.hp-=d;t.lastHit=time;if(t.k==='b'&&t.side===0&&src&&src.side===1)warnAttack(t);
+  t.hp-=d;t.lastHit=time;if(t.k==='b'&&t.side>=0&&sides[t.side].human&&src&&hostile(src.side,t.side))warnAttack(t);
   if(t.k==='b'&&t.side>=0)sides[t.side].lastAtk={t:time,x:t.x,y:t.y,src};
   if(t.k==='u'&&src&&!src.dead&&!t.tgt&&t.ord!=='move'&&t.s.dmg&&src.side!==t.side)t.tgt=src;
   if(t.k==='u'&&t.side>=0)sides[t.side].lastAtkU={t:time,x:t.x,y:t.y,src};
@@ -82,27 +88,27 @@ function hurt(t,dmg,wpn,src){if(!alive(t)||t.type==='tech')return;const arm=t.k=
 function kill(t,src){t.dead=true;t.hp=0;
   if(t.k==='b'){for(let y=t.ty;y<t.ty+t.h;y++)for(let x=t.tx;x<t.tx+t.w;x++)if(occ[y*MW+x]===t.id)occ[y*MW+x]=0;if(t.type==='wall')wallMap[t.ty*MW+t.tx]=0;
     boom(t.x,t.y,t.w*14,true);for(let i=0;i<t.w*t.h*2;i++)setTimeout(()=>boom(t.x+(rnd()-.5)*t.w*T,t.y+(rnd()-.5)*t.h*T,16),i*90);
-    decalRubble(t);if(t.side>=0)sides[t.side].stats.blost++;if(t.side===0)say(`${FAC[sides[0].fac].b[t.type]} zerstört!`,'bad');}
+    decalRubble(t);if(t.side>=0)sides[t.side].stats.blost++;if(t.side>=0)tell(t.side,`${FAC[sides[t.side].fac].b[t.type]} zerstört!`,'bad');}
   else{if(t.s.arm==='inf'||t.type==='fast'&&sides[t.side].fac==='mutant'||t.type==='heavy'&&sides[t.side].fac==='mutant'||t.type==='oil'&&sides[t.side].fac==='mutant'||t.type==='elite'&&sides[t.side].fac==='mutant'){decalBlood(t.x,t.y,t.s.r);sfx('die',t.x,t.y)}
     else{boom(t.x,t.y,t.s.r*1.6,false);decalWreck(t)}
     if(t.side>=0)sides[t.side].stats.lost++}
-  if(src&&src.k==='u'&&!src.dead&&src.side!==t.side){src.kills++;sides[src.side].stats.kills++;const v=src.kills>=10?3:src.kills>=5?2:src.kills>=2?1:0;if(v>src.vet){src.vet=v;const nm=stat(src.side,src.type).hp*(1+v*.2);src.hp+=nm-src.max;src.max=nm;src.hp=Math.min(src.max,src.hp+src.max*.3);if(src.side===0)say(`${FAC[sides[0].fac].u[src.type]} befördert – ${'★'.repeat(v)}`)}}
+  if(src&&src.k==='u'&&!src.dead&&src.side!==t.side){src.kills++;sides[src.side].stats.kills++;const v=src.kills>=10?3:src.kills>=5?2:src.kills>=2?1:0;if(v>src.vet){src.vet=v;const nm=stat(src.side,src.type).hp*(1+v*.2);src.hp+=nm-src.max;src.max=nm;src.hp=Math.min(src.max,src.hp+src.max*.3);tell(src.side,`${FAC[sides[src.side].fac].u[src.type]} befördert – ${'★'.repeat(v)}`)}}
   else if(src&&src.k==='b'&&src.side!==t.side)sides[src.side].stats.kills++;
   sel=sel.filter(e=>e!==t)}
 function fire(a,t){const s=a.k==='b'?B[a.type]:a.s;const mx=a.x+Math.cos(a.tdir)*(a.k==='u'?a.s.r:8),my=a.y+Math.sin(a.tdir)*(a.k==='u'?a.s.r:8);
   if(s.wpn==='bullet'){hurt(t,s.dmg*(.8+rnd()*.4),'bullet',a);tracers.push({x1:mx,y1:my,x2:t.x+(rnd()-.5)*8,y2:t.y+(rnd()-.5)*8,l:.07,c:'#ffe28a'});flash(mx,my,4);sfx(a.type==='fast'||a.k==='b'?'mg':'rifle',a.x,a.y)}
   else if(s.wpn==='melee'){hurt(t,s.dmg,'melee',a);sfx('bite',a.x,a.y);if(rnd()<.5)parts.push({x:t.x,y:t.y,vx:(rnd()-.5)*40,vy:(rnd()-.5)*40,l:.4,m:.4,t:'blood',r:2})}
   else if(s.wpn==='laser'){hurt(t,s.dmg,'laser',a);tracers.push({x1:mx,y1:my,x2:t.x,y2:t.y,l:.18,c:'#7ae8ff',w:4});flash(t.x,t.y,10,'#7ae8ff');sfx('laser',a.x,a.y)}
-  else if(s.wpn==='fire'){hurt(t,s.dmg,'fire',a);for(const e of ents)if(e!==t&&!e.dead&&e.side>=0&&e.side!==a.side&&!(e.s&&e.s.air)&&edgeDist({x:t.x,y:t.y},e)<14)hurt(e,s.dmg*.5,'fire',a);
+  else if(s.wpn==='fire'){hurt(t,s.dmg,'fire',a);for(const e of ents)if(e!==t&&!e.dead&&hostile(e.side,a.side)&&!(e.s&&e.s.air)&&edgeDist({x:t.x,y:t.y},e)<14)hurt(e,s.dmg*.5,'fire',a);
     tracers.push({x1:mx,y1:my,x2:t.x,y2:t.y,l:.12,c:'#ff8a2a',w:5});for(let i=0;i<4;i++){const k=rnd();parts.push({x:mx+(t.x-mx)*k,y:my+(t.y-my)*k,vx:(rnd()-.5)*20,vy:-10-rnd()*20,l:.35,m:.35,t:'fire',r:3+k*5})}sfx('flame',a.x,a.y)}
   else if(s.wpn==='shell'){const d0=dist(mx,my,t.x,t.y);projs.push({x:mx,y:my,sx:mx,sy:my,d0,t,tx:t.x+(rnd()-.5)*20,ty:t.y+(rnd()-.5)*20,spd:190,wpn:'shell',dmg:s.dmg,src:a,side:a.side,trail:0});flash(mx,my,12);sfx('cannon',a.x,a.y)}
   else{projs.push({x:mx,y:my,t,tx:t.x,ty:t.y,spd:s.wpn==='rocket'?250:420,wpn:s.wpn,dmg:s.dmg,src:a,side:a.side,trail:0});flash(mx,my,s.wpn==='cannon'?9:5);sfx(s.wpn,a.x,a.y)}}
 function updProj(dt){for(const p of projs){if(alive(p.t)&&p.wpn!=='shell'){p.tx=p.t.x;p.ty=p.t.y}const d=dist(p.x,p.y,p.tx,p.ty),st=p.spd*dt;
   if(p.wpn==='rocket'&&(p.trail-=dt)<0){p.trail=.02;parts.push({x:p.x,y:p.y,vx:(rnd()-.5)*6,vy:(rnd()-.5)*6,l:.6,m:.6,t:'smoke',r:3})}
   if(d<=st){p.done=true;const R=p.wpn==='shell'?44:p.wpn==='rocket'?18:22;boom(p.tx,p.ty,p.wpn==='shell'?16:p.wpn==='cannon'?10:8,p.wpn==='shell',p.wpn!=='shell');
-    for(const e of ents)if(!e.dead&&e.side!==p.side&&e.side>=0&&!(e.k==='u'&&e.s.air&&!ARM[p.wpn].air&&e!==p.t)&&edgeDist({x:p.tx,y:p.ty},e)<=R){const f=e===p.t||p.wpn==='shell'&&edgeDist({x:p.tx,y:p.ty},e)<16?1:.45;hurt(e,p.dmg*f,p.wpn,p.src)}}
+    for(const e of ents)if(!e.dead&&hostile(e.side,p.side)&&!(e.k==='u'&&e.s.air&&!ARM[p.wpn].air&&e!==p.t)&&edgeDist({x:p.tx,y:p.ty},e)<=R){const f=e===p.t||p.wpn==='shell'&&edgeDist({x:p.tx,y:p.ty},e)<16?1:.45;hurt(e,p.dmg*f,p.wpn,p.src)}}
   else{p.x+=(p.tx-p.x)/d*st;p.y+=(p.ty-p.y)/d*st}}projs=projs.filter(p=>!p.done)}
-function acquire(a,range){const w=(a.k==='b'?B[a.type]:a.s).wpn;let best=null,bd=1e9;for(const e of ents){if(e.dead||e.side===a.side||e.side<0)continue;if(e.k==='u'&&e.s.air&&!ARM[w].air)continue;if(!isVisTo(a.side,e))continue;const d=edgeDist(a,e);if(d>range*T)continue;
+function acquire(a,range){const w=(a.k==='b'?B[a.type]:a.s).wpn;let best=null,bd=1e9;for(const e of ents){if(e.dead||!hostile(e.side,a.side))continue;if(e.k==='u'&&e.s.air&&!ARM[w].air)continue;if(!isVisTo(a.side,e))continue;const d=edgeDist(a,e);if(d>range*T)continue;
   let sc=d+(e.k==='b'?120:0)-(e.s&&e.s.dmg?20:0);if(sc<bd){bd=sc;best=e}}return best}
 
 /* ======================= Einheiten-Logik ======================= */
@@ -130,8 +136,10 @@ function move(u,dt){const s=u.s;if(!u.path||u.pi>=u.path.length){if(u.path&&u.or
   const a=Math.atan2(dy,dx);u.dir=turn(u.dir,a,dt*(s.arm==='inf'?12:5));if(!u.tgt)u.tdir=turn(u.tdir,u.dir,dt*5);
   const ok=Math.abs(angDiff(u.dir,a))<1.2;const v=s.spd*dt*(ok?1:.3)*(u.vet?1+u.vet*.05:1);
   const nx=u.x+Math.cos(u.dir)*v,ny=u.y+Math.sin(u.dir)*v;
+  const ox=u.x,oy=u.y;
   if(!blocked((nx/T)|0,(ny/T)|0)){u.x=nx;u.y=ny;u.stuck=0}else if(!blocked((nx/T)|0,(u.y/T)|0))u.x=nx;else if(!blocked((u.x/T)|0,(ny/T)|0))u.y=ny;
   else{const cx=((u.x/T)|0)*T+16,cy=((u.y/T)|0)*T+16;u.x+=(cx-u.x)*.3;u.y+=(cy-u.y)*.3;if(++u.stuck>20){u.stuck=0;reqPath(u,u.pgx,u.pgy)}}
+  if(ok&&Math.abs(u.x-ox)+Math.abs(u.y-oy)<v*.2&&++u.stuck>20){u.stuck=0;reqPath(u,u.pgx,u.pgy)}
   u.moving=true;if(u.s.arm!=='inf'&&(u.trk=(u.trk||0)-dt)<=0&&onScreen(u.x,u.y,60)){u.trk=.12;const r=u.s.r;decalX.save();decalX.translate(u.x,u.y);decalX.rotate(u.dir);decalX.fillStyle='rgba(70,50,30,.10)';decalX.fillRect(-3,-r*.7,6,3);decalX.fillRect(-3,r*.7-3,6,3);decalX.restore();
     if(rnd()<.5)parts.push({x:u.x-Math.cos(u.dir)*r,y:u.y-Math.sin(u.dir)*r,vx:(rnd()-.5)*8,vy:(rnd()-.5)*8,l:.9,m:.9,t:'dust',r:3+r*.2})}}
 const angDiff=(a,b)=>{let d=b-a;while(d>Math.PI)d-=Math.PI*2;while(d<-Math.PI)d+=Math.PI*2;return d};
@@ -139,7 +147,7 @@ const turn=(a,b,m)=>{const d=angDiff(a,b);return a+clamp(d,-m,m)};
 function separate(){const cell={},key=(x,y)=>((x/48)|0)+','+((y/48)|0);const us=ents.filter(e=>e.k==='u'&&!e.dead&&!e.s.air);
   for(const u of us){const k=key(u.x,u.y);(cell[k]||(cell[k]=[])).push(u)}
   for(const u of us){const cx=(u.x/48)|0,cy=(u.y/48)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const l=cell[(cx+dx)+','+(cy+dy)];if(!l)continue;
-    for(const o of l){if(o.id<=u.id)continue;const ddx=o.x-u.x,ddy=o.y-u.y,d=Math.hypot(ddx,ddy)||.01,m=(u.s.r+o.s.r)*.85;if(d<m){const push=(m-d)*.35,px=ddx/d*push,py=ddy/d*push;
+    for(const o of l){if(o.id<=u.id||u.type==='oil'&&o.type==='oil')continue;const ddx=o.x-u.x,ddy=o.y-u.y,d=Math.hypot(ddx,ddy)||.01,m=(u.s.r+o.s.r)*.85;if(d<m){const push=(m-d)*.35,px=ddx/d*push,py=ddy/d*push;
       const um=!u.path,om=!o.path;const fu=um&&!om?.3:1,fo=om&&!um?.3:1;
       tryPush(u,-px*fu,-py*fu);tryPush(o,px*fo,py*fo)}}}}}
 function tryPush(u,dx,dy){const nx=u.x+dx,ny=u.y+dy;if(!blocked((nx/T)|0,(ny/T)|0)){u.x=nx;u.y=ny}}
@@ -153,20 +161,20 @@ function tanker(u,dt){const S=sides[u.side];u.stT-=dt;
   if(u.st==='load'&&u.stT<=0){const amt=Math.min(200,u.der?u.der.oil:0);if(u.der)u.der.oil-=amt;u.load=amt;u.st='toRef'}
   if(u.st==='toRef'){const rs=own(u.side,'ref');if(!rs.length){u.st='wait';u.stT=3;return}let r=rs.reduce((a,b)=>dist(u.x,u.y,a.x,a.y)<dist(u.x,u.y,b.x,b.y)?a:b);u.ref=r;
     if(edgeDist(u,r)<T*.8){u.st='unload';u.stT=1.5;u.path=null}else if(!u.path&&!pathQ.includes(u)){const t=dock(r);reqPath(u,t.x,t.y)}}
-  if(u.st==='unload'&&u.stT<=0){if(alive(u.ref)){const inc=u.load*(u.side===1&&sides[1].ai?DIFF[cfg.diff].inc:1)*(1+(u.ref.lvl-1)*.2)*(1+Math.min(3,own(u.side,'sil').length)*.1);S.money+=Math.round(inc);S.stats.oil+=Math.round(inc);if(u.side===0&&onScreen(u.x,u.y))floatTxt(u.ref.x,u.ref.y-30,'+'+Math.round(inc),'#ffcf5a')}u.load=0;u.st='idle'}}
+  if(u.st==='unload'&&u.stT<=0){if(alive(u.ref)){const inc=u.load*(S.ai?DIFF[cfg.diff].inc:1)*(1+(u.ref.lvl-1)*.2)*(1+Math.min(3,own(u.side,'sil').length)*.1);S.money+=Math.round(inc);S.stats.oil+=Math.round(inc);if(u.side===me&&onScreen(u.x,u.y))floatTxt(u.ref.x,u.ref.y-30,'+'+Math.round(inc),'#ffcf5a')}u.load=0;u.st='idle'}}
 function dock(b){let best=null,bd=1e9;for(let y=b.ty-1;y<=b.ty+b.h;y++)for(let x=b.tx-1;x<=b.tx+b.w;x++){if(blocked(x,y))continue;const d=Math.abs(y-(b.ty+b.h))*0.5+Math.abs(x-(b.tx+b.w/2));if(d<bd){bd=d;best={x,y}}}return best||{x:b.tx,y:b.ty+b.h}}
 function openBunker(b,u){b.opened=true;const S=sides[u.side];const n=cfg.size>70?2:1;
   for(let i=0;i<n;i++){const f=nearestFree(b.tx+1,b.ty+b.h+1,5);if(f){const e=addUnit(u.side,'elite',f.x*T+16,f.y*T+16);e.vet=1}}
   for(const o of ents)if(o.bunker===b)o.bunker=null;
-  boom(b.x,b.y,14);if(u.side===0)say(`Tech-Bunker geöffnet – ${FAC[S.fac].u.elite} erbeutet!`);else if(isVisTo(0,b))say('Der Feind hat einen Tech-Bunker geplündert!','bad')}
+  boom(b.x,b.y,14);tell(u.side,`Tech-Bunker geöffnet – ${FAC[S.fac].u.elite} erbeutet!`);if(u.side!==me&&hostile(u.side,me)&&isVisTo(me,b))say('Der Feind hat einen Tech-Bunker geplündert!','bad')}
 function updBld(b,dt){b.anim+=dt;const d=B[b.type];const S=b.side>=0?sides[b.side]:null,PF=S?pf(S):1;
-  if(b.up){b.up.t+=dt*PF;if(b.up.t>=b.up.total){b.up=null;b.lvl++;const add=b.max*.3;b.max+=add;b.hp+=add;if(b.side===0){say(`${FAC[sides[0].fac].b[b.type]} auf Stufe ${b.lvl} ausgebaut`);floatTxt(b.x,b.y-30,'Stufe '+b.lvl,'#7aff6a')}}}
+  if(b.up){b.up.t+=dt*PF;if(b.up.t>=b.up.total){b.up=null;b.lvl++;const add=b.max*.3;b.max+=add;b.hp+=add;if(b.side>=0){tell(b.side,`${FAC[sides[b.side].fac].b[b.type]} auf Stufe ${b.lvl} ausgebaut`);floatTxt(b.x,b.y-30,'Stufe '+b.lvl,'#7aff6a')}}}
   if(d.wpn){const rg=d.rng+(b.lvl-1)*.75;b.cd-=dt*PF;if(b.tgt&&(b.tgt.dead||edgeDist(b,b.tgt)>rg*T||!isVisTo(b.side,b.tgt)))b.tgt=null;if(!b.tgt&&(b.acqT=(b.acqT||0)-dt)<=0){b.acqT=.4;b.tgt=acquire(b,rg)}
     if(b.tgt){const a=Math.atan2(b.tgt.y-b.y,b.tgt.x-b.x);b.tdir=turn(b.tdir,a,dt*5);if(b.cd<=0&&Math.abs(angDiff(b.tdir,a))<.3){fire(b,b.tgt);b.cd=d.cd}}}
   if(b.hp<b.max*.5&&rnd()<dt*6)parts.push({x:b.x+(rnd()-.5)*b.w*T*.6,y:b.y+(rnd()-.5)*b.h*T*.6,vx:4,vy:-18,l:1.6,m:1.6,t:b.hp<b.max*.25&&rnd()<.5?'fire':'smoke',r:5});
   if(b.type==='rep'&&S){const hr=4.5*T;for(const e of ents){if(e.dead||e.side!==b.side||e===b)continue;if(e.k==='u'){if(e.hp<e.max&&(!organic(e)||S.fac==='mutant')&&dist(e.x,e.y,b.x,b.y)<hr){e.hp=Math.min(e.max,e.hp+14*dt*PF*b.lvl);if(rnd()<dt*2)parts.push({x:e.x,y:e.y-6,vx:0,vy:-14,l:.8,m:.8,t:'spark',r:2})}}
       else if(e.hp<e.max&&e.type!=='tech'&&dist(e.x,e.y,b.x,b.y)<6.5*T){e.hp=Math.min(e.max,e.hp+5*dt*PF*b.lvl);if(rnd()<dt)parts.push({x:e.x+(rnd()-.5)*e.w*T*.6,y:e.y+(rnd()-.5)*e.h*T*.6,vx:0,vy:-10,l:.7,m:.7,t:'spark',r:2})}}}
-  if(b.type==='scr'&&S&&b.scrap>0){const v=Math.min(b.scrap,9*dt*PF*(1+(b.lvl-1)*.3));b.scrap-=v;const inc=v*(b.side===1&&S.ai?DIFF[cfg.diff].inc:1);S.money+=inc;S.stats.oil+=inc;b.acc=(b.acc||0)+inc;if(b.acc>=50){if(b.side===0&&onScreen(b.x,b.y))floatTxt(b.x,b.y-24,'+'+Math.round(b.acc),'#ffcf5a');b.acc=0}}
+  if(b.type==='scr'&&S&&b.scrap>0){const v=Math.min(b.scrap,9*dt*PF*(1+(b.lvl-1)*.3));b.scrap-=v;const inc=v*(S.ai?DIFF[cfg.diff].inc:1);S.money+=inc;S.stats.oil+=inc;b.acc=(b.acc||0)+inc;if(b.acc>=50){if(b.side===me&&onScreen(b.x,b.y))floatTxt(b.x,b.y-24,'+'+Math.round(b.acc),'#ffcf5a');b.acc=0}}
   if(b.type==='sup'&&S){b.charge=Math.min(B.sup.charge,(b.charge||0)+dt*PF);if(b.charge>=B.sup.charge&&S.ai)aiFireSup(S,b)}
   if(b.type==='pow'&&rnd()<dt*3)parts.push({x:b.tx*T+12,y:b.ty*T+4,vx:4,vy:-16,l:1.8,m:1.8,t:S&&S.fac==='mutant'?'gas':'smoke',r:4});
   if((b.type==='ref'||b.type==='hq')&&rnd()<dt*2.5)parts.push({x:b.tx*T+(b.type==='ref'?20:b.w*T-14),y:b.ty*T+6,vx:6,vy:-14,l:2.2,m:2.2,t:'smoke',r:4})}
@@ -175,18 +183,18 @@ function updBld(b,dt){b.anim+=dt;const d=B[b.type];const S=b.side>=0?sides[b.sid
 function reqList(type){const d=B[type]||U[type];const r=[...(d.req||[])];if(U[type]&&!B[type])r.unshift(U[type].from);return r}
 function reqOK(S,type){if(type==='heavy'&&S.lvl<2)return false;return reqList(type).every(t=>own(S.id,t).length>0)}
 function reqText(S,type){const miss=reqList(type).filter(t=>!own(S.id,t).length).map(t=>FAC[S.fac].b[t]);if(type==='heavy'&&S.lvl<2)miss.push('Ausbau der Zentrale');return miss.length?'braucht '+miss.join(' + '):''}
-function startBuild(S,type){if(S.bq||!reqOK(S,type))return false;const c=B[type].cost;if(S.money<c){if(S.id===0)say('Zu wenig Öl-Dollar!','bad');return false}S.money-=c;S.bq={type,t:0,total:B[type].time};return true}
-function queueUnit(S,type){if(!reqOK(S,type))return false;const st=stat(S.id,type);if(S.money<st.cost){if(S.id===0)say('Zu wenig Öl-Dollar!','bad');return false}
+function startBuild(S,type){if(S.bq||!reqOK(S,type))return false;const c=B[type].cost;if(S.money<c){tell(S.id,'Zu wenig Öl-Dollar!','bad');return false}S.money-=c;S.bq={type,t:0,total:B[type].time};return true}
+function queueUnit(S,type){if(!reqOK(S,type))return false;const st=stat(S.id,type);if(S.money<st.cost){tell(S.id,'Zu wenig Öl-Dollar!','bad');return false}
   const q=S.uq[st.from];if(q.length>=10)return false;S.money-=st.cost;q.push({type,t:0,total:st.time});return true}
-function updProd(S,dt){const PF=pf(S);if(S.bq&&!S.bq.done){S.bq.t+=dt*PF;if(S.bq.t>=S.bq.total){S.bq.done=true;if(S.id===0){say('Gebäude bereit – jetzt platzieren');tab='b';buildUI()}}}
+function updProd(S,dt){const PF=pf(S);if(S.bq&&!S.bq.done){S.bq.t+=dt*PF;if(S.bq.t>=S.bq.total){S.bq.done=true;tell(S.id,'Gebäude bereit – jetzt platzieren');if(S.id===me){tab='b';buildUI()}}}
   for(const pb of PRODB){const q=S.uq[pb],ps=own(S.id,pb);if(!q.length||!ps.length)continue;q[0].t+=dt*PF*(1+(ps.length-1)*.5)*(1+(Math.max(...ps.map(p=>p.lvl))-1)*.35);
     if(q[0].t>=q[0].total){const it=q.shift();const p=ps[(S.rot=(S.rot||0)+1)%ps.length];const f=nearestFree(p.tx+(p.w>>1),p.ty+p.h,6)||{x:p.tx,y:p.ty+p.h};
-      const u=addUnit(S.id,it.type,f.x*T+16,f.y*T+16);if(p.rally)cmdMove([u],p.rally.x,p.rally.y,it.type==='oil'?'move':'amove');if(S.id===0)say(`${FAC[S.fac].u[it.type]} bereit`,'',true)}}
-  if(S.res){if(!own(S.id,RES[S.res.k].at).length){S.money+=S.res.cost;S.res=null}else{S.res.t+=dt*PF;if(S.res.t>=S.res.total){const k=S.res.k;S.tech[k]=(S.tech[k]||0)+1;S.res=null;if(S.id===0)say(`Forschung fertig: ${RES[k].n} ${ROM[S.tech[k]]}`)}}}
-  if(S.upg){S.upg.t+=dt*PF;if(S.upg.t>=S.upg.total){S.upg=null;S.lvl=2;for(const h of own(S.id,'hq')){h.max*=1.3;h.hp*=1.3}if(S.id===0)say('Zentrale ausgebaut – schwere Einheiten verfügbar!')}}}
-function fireSup(S,b,x,y){if(!b||b.dead||(b.charge||0)<B.sup.charge)return false;b.charge=0;const delay=S.id===0?3:8;nukes.push({x,y,t:delay,max:delay,side:S.id,fac:S.fac});
-  if(S.id!==0){say(`Warnung: ${FAC[S.fac].sup} im Anflug!`,'bad');sides[0].alarm={x,y,t:time}}else say(`${FAC[S.fac].sup} abgefeuert!`);sfx('launch');return true}
-function aiFireSup(S,b){const en=own(1-S.id).filter(e=>e.type!=='wall');if(!en.length)return;let best=en[0],bn=-1;for(const e of en){const n=en.filter(o=>dist(o.x,o.y,e.x,e.y)<5*T).length;if(n>bn){bn=n;best=e}}fireSup(S,b,best.x,best.y)}
+      const u=addUnit(S.id,it.type,f.x*T+16,f.y*T+16);if(p.rally)cmdMove([u],p.rally.x,p.rally.y,it.type==='oil'?'move':'amove');tell(S.id,`${FAC[S.fac].u[it.type]} bereit`,'',true)}}
+  if(S.res){if(!own(S.id,RES[S.res.k].at).length){S.money+=S.res.cost;S.res=null}else{S.res.t+=dt*PF;if(S.res.t>=S.res.total){const k=S.res.k;S.tech[k]=(S.tech[k]||0)+1;S.res=null;tell(S.id,`Forschung fertig: ${RES[k].n} ${ROM[S.tech[k]]}`)}}}
+  if(S.upg){S.upg.t+=dt*PF;if(S.upg.t>=S.upg.total){S.upg=null;S.lvl=2;for(const h of own(S.id,'hq')){h.max*=1.3;h.hp*=1.3}tell(S.id,'Zentrale ausgebaut – schwere Einheiten verfügbar!')}}}
+function fireSup(S,b,x,y){if(!b||b.dead||(b.charge||0)<B.sup.charge)return false;b.charge=0;const delay=S.human?3:8;nukes.push({x,y,t:delay,max:delay,side:S.id,fac:S.fac});
+  for(const X of sides){if(X.id===S.id)tell(X.id,`${FAC[S.fac].sup} abgefeuert!`);else if(X.human&&!X.dead&&hostile(X.id,S.id)){tell(X.id,`Warnung: ${FAC[S.fac].sup} im Anflug!`,'bad');X.alarm={x,y,t:time}}}sfx('launch');return true}
+function aiFireSup(S,b){const en=foes(S.id).filter(e=>e.type!=='wall');if(!en.length)return;let best=en[0],bn=-1;for(const e of en){const n=en.filter(o=>dist(o.x,o.y,e.x,e.y)<5*T).length;if(n>bn){bn=n;best=e}}fireSup(S,b,best.x,best.y)}
 function updNukes(dt){for(const n of nukes){n.t-=dt;if(n.t<=0&&!n.done){n.done=true;const R=5.5*T,plague=n.fac==='mutant';
     for(const e of ents){if(e.dead||e.type==='tech')continue;const dd=e.k==='b'?edgeDist({x:n.x,y:n.y},e):dist(e.x,e.y,n.x,n.y);if(dd<R){const f=1-dd/R*.6;const dm=1100*f*(plague?(e.k==='b'?.6:1.25):1);e.hp-=dm;e.lastHit=time;if(e.hp<=0)kill(e,null)}}
     for(let i=0;i<14;i++)setTimeout(()=>boom(n.x+(rnd()-.5)*R*1.2,n.y+(rnd()-.5)*R*1.2,22,true),i*70);boom(n.x,n.y,40,true);flash(n.x,n.y,R*1.2,plague?'#b8ff5a':'#fff8d0');
@@ -194,16 +202,16 @@ function updNukes(dt){for(const n of nukes){n.t-=dt;if(n.t<=0&&!n.done){n.done=t
     decalScorch(n.x,n.y,R*1.1);shake=1.2}}nukes=nukes.filter(n=>!n.done)}
 function canPlace(S,type,tx,ty){const d=B[type];if(tx<1||ty<1||tx+d.w>MW-1||ty+d.h>MH-1)return false;
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++){const t=tiles[y*MW+x];if(t===1||occ[y*MW+x])return false;if(type==='der'?t!==2:type==='scr'?t!==3:t>=2)return false}
-  if(type==='der'||type==='scr')return S.id!==0||expl[ty*MW+tx]||cfg.reveal;
+  if(type==='der'||type==='scr')return S.id!==me||expl[ty*MW+tx]||cfg.reveal;
   for(const b of own(S.id))if(tx<=b.tx+b.w+6&&tx+d.w>=b.tx-6&&ty<=b.ty+b.h+6&&ty+d.h>=b.ty-6)return true;return false}
 function place(S,tx,ty){const type=S.bq.type;if(!canPlace(S,type,tx,ty))return false;const b=addBld(S.id,type,tx,ty);S.bq=null;S.stats.built++;
   if(type==='ref'||type==='der'){const d=dock(b);const f=nearestFree(d.x,d.y,5);if(f){const u=addUnit(S.id,'oil',f.x*T+16,f.y*T+16);if(type==='der')u.der=b}}
   if(type==='scr')b.scrap=7000;
-  if(type==='wall'&&S.id===0&&S.money>=B.wall.cost){S.money-=B.wall.cost;S.bq={type:'wall',t:0,total:0,done:true}}
+  if(type==='wall'&&S.human&&S.money>=B.wall.cost){S.money-=B.wall.cost;S.bq={type:'wall',t:0,total:0,done:true}}
   sfx('place',b.x,b.y);return true}
 
 /* ======================= Computer-Gegner ======================= */
-function updAI(S,dt){const D=DIFF[cfg.diff];if(S.human)return;
+function updAI(S,dt){const D=DIFF[cfg.diff];if(S.human||S.dead)return;
   const hq=own(S.id,'hq')[0]||own(S.id)[0];if(!hq)return;
   const has=t=>own(S.id,t).length,ders=own(S.id,'der');
   // Bauen
@@ -242,7 +250,7 @@ function updAI(S,dt){const D=DIFF[cfg.diff];if(S.human)return;
   // Rallypunkt vor der Basis
   const army=units(S.id).filter(u=>u.type!=='oil'&&u.type!=='elite'||u.type==='elite');
   const idle=army.filter(u=>!u.wave&&u.ord!=='attack');
-  const enemyB=own(0).concat(own(1)).filter(b=>b.side!==S.id&&b.type!=='wall');
+  const enemyB=foes(S.id).filter(b=>b.type!=='wall');
   // Verteidigung
   if(S.lastAtk&&time-S.lastAtk.t<3){for(const u of idle){if(dist(u.x,u.y,S.lastAtk.x,S.lastAtk.y)<16*T&&!u.tgt){u.ord='amove';u.gx=S.lastAtk.x;u.gy=S.lastAtk.y;reqPath(u,(u.gx/T)|0,(u.gy/T)|0)}}}
   // Angriffswelle
@@ -256,10 +264,10 @@ function updAI(S,dt){const D=DIFF[cfg.diff];if(S.human)return;
   // Tech-Bunker
   if(time>120&&!S.scout){const tb=ents.find(e=>e.type==='tech'&&!e.opened);const sc=units(S.id,'inf')[0]||units(S.id,'fast')[0];if(tb&&sc&&sc.s.arm==='inf'){S.scout=1;sc.wave=1;sc.bunker=tb;cmdMove([sc],tb.x,tb.y+T*1.5,'move')}}}
 function freeOil(S,code=2){const r=[];for(let y=1;y<MH-2;y++)for(let x=1;x<MW-2;x++)if(tiles[y*MW+x]===code&&tiles[y*MW+x-1]!==code&&tiles[(y-1)*MW+x]!==code&&!occ[y*MW+x])r.push({x,y});
-  const hq=own(S.id,'hq')[0]||own(S.id)[0];if(!hq)return[];const en=own(1-S.id);
+  const hq=own(S.id,'hq')[0]||own(S.id)[0];if(!hq)return[];const en=foes(S.id);
   return r.filter(f=>!en.some(b=>Math.hypot(b.tx-f.x,b.ty-f.y)<8)).sort((a,b)=>Math.hypot(a.x-hq.tx,a.y-hq.ty)-Math.hypot(b.x-hq.tx,b.y-hq.ty))}
-function aiSpot(S,type,hq){if(type==='der'||type==='scr'){const f=freeOil(S,type==='der'?2:3)[0];return f&&canPlace(S,type,f.x,f.y)?f:null}
-  const en=own(1-S.id)[0]||{x:MW*T/2,y:MH*T/2};const a=Math.atan2(en.y-hq.y,en.x-hq.x);
+function aiSpot(S,type,hq){if(type==='der'||type==='scr'){return freeOil(S,type==='der'?2:3).find(f=>canPlace(S,type,f.x,f.y))||null}
+  const en=foes(S.id).sort((a,b)=>dist(hq.x,hq.y,a.x,a.y)-dist(hq.x,hq.y,b.x,b.y))[0]||{x:MW*T/2,y:MH*T/2};const a=Math.atan2(en.y-hq.y,en.x-hq.x);
   for(let r=3;r<12;r++)for(let k=0;k<24;k++){const ang=type==='tow'?a+(k%2?1:-1)*Math.floor(k/2)*.25:k/24*Math.PI*2+rnd()*.2;const x=Math.round(hq.tx+1+Math.cos(ang)*r),y=Math.round(hq.ty+1+Math.sin(ang)*r);
     if(canPlace(S,type,x,y)){let gap=true;const d=B[type];for(let yy=y-1;yy<=y+d.h&&gap;yy++)for(let xx=x-1;xx<=x+d.w;xx++)if(occ[yy*MW+xx]){gap=false;break}if(gap||type==='tow')return{x,y}}}return null}
 
@@ -294,4 +302,36 @@ let lastSay=0;
 function say(txt,cls,quiet){const m=document.createElement('div');m.className='msg '+(cls||'');m.textContent=txt;const box=$('msgs');box.appendChild(m);while(box.children.length>4)box.firstChild.remove();setTimeout(()=>m.remove(),4500);
   if(!quiet)sfx('ready');
   if(voiceOn&&!quiet&&window.speechSynthesis&&performance.now()-lastSay>1500){lastSay=performance.now();try{const u=new SpeechSynthesisUtterance(txt.replace(/–.*$/,'').replace(/★/g,''));u.lang='de-DE';u.rate=1.08;u.pitch=.7;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}}
-function warnAttack(b){if(time-(msgT.atk||-99)>15){msgT.atk=time;say('Unsere Basis wird angegriffen!','bad');sides[0].alarm={x:b.x,y:b.y,t:time}}}
+function warnAttack(b){const S=sides[b.side];if(time-(S.atkT||-99)>15){S.atkT=time;tell(S.id,'Unsere Basis wird angegriffen!','bad');S.alarm={x:b.x,y:b.y,t:time}}}
+
+/* ======================= Befehle (lokal und über das Netz) ======================= */
+function sellBld(S,e){if(!e||e.dead||e.side!==S.id||e.k!=='b'||e.type==='hq')return;const v=Math.floor(e.spent*.5*e.hp/e.max);
+  for(let y=e.ty;y<e.ty+e.h;y++)for(let x=e.tx;x<e.tx+e.w;x++)if(occ[y*MW+x]===e.id)occ[y*MW+x]=0;if(e.type==='wall')wallMap[e.ty*MW+e.tx]=0;
+  e.dead=true;e.hp=0;S.money+=v;for(const o of ents)if(o.der===e)o.der=null;
+  for(let i=0;i<e.w*e.h*3;i++)parts.push({x:e.x+(rnd()-.5)*e.w*T,y:e.y+(rnd()-.5)*e.h*T,vx:(rnd()-.5)*10,vy:-8-rnd()*10,l:1.2+rnd(),m:2,t:'smoke',r:6});
+  decalRubble(e);sfx('place',e.x,e.y);floatTxt(e.x,e.y-20,'+'+v,'#ffcf5a');tell(S.id,`${FAC[S.fac].b[e.type]} verkauft (+${v} $)`,'',true);if(S.id===me){sel=sel.filter(o=>o!==e);infoUI();updUI(true)}}
+function upgradeBld(S,e){if(!e||e.dead||e.side!==S.id||!BUPG.includes(e.type)||e.up||e.lvl>=3)return;const c=bupCost(e);if(S.money<c){tell(S.id,'Zu wenig Öl-Dollar!','bad',true);return}
+  S.money-=c;e.spent+=c;e.up={t:0,total:bupTime(e)};tell(S.id,`Ausbau ${FAC[S.fac].b[e.type]} gestartet`,'',true);if(S.id===me)infoUI()}
+function startRes(S,k){const r=RES[k],lv=S.tech[k]||0;if(!r||S.res||lv>=2||!own(S.id,r.at).length)return false;const c=r.c[lv];if(S.money<c){tell(S.id,'Zu wenig Öl-Dollar!','bad',true);return false}
+  S.money-=c;S.res={k,t:0,total:r.t[lv],cost:c};tell(S.id,`Forschung gestartet: ${r.n} ${ROM[lv+1]}`,'',true);return true}
+function upgradeHQ(S){if(S.money>=1200&&!S.upg&&S.lvl<2){S.money-=1200;S.upg={t:0,total:30};tell(S.id,'Ausbau der Zentrale gestartet','',true);if(S.id===me)infoUI()}}
+function doCmd(sid,c){const S=sides[sid];if(!S||S.dead||!Array.isArray(c))return;
+  const mine=ids=>Array.isArray(ids)?ents.filter(e=>!e.dead&&e.side===sid&&ids.includes(e.id)):[],get=id=>ents.find(e=>!e.dead&&e.id===id);
+  switch(c[0]){
+    case'build':if(B[c[1]]&&BORDER.includes(c[1]))startBuild(S,c[1]);break;
+    case'cbuild':if(S.bq){S.money+=B[S.bq.type].cost;S.bq=null}break;
+    case'q':if(UORDER.includes(c[1]))queueUnit(S,c[1]);break;
+    case'dq':{if(!UORDER.includes(c[1]))break;const d=stat(sid,c[1]),q=S.uq[d.from];for(let i=q.length-1;i>=0;i--)if(q[i].type===c[1]){S.money+=d.cost;q.splice(i,1);break}break}
+    case'place':if(S.bq&&S.bq.done)place(S,c[1]|0,c[2]|0);break;
+    case'sell':sellBld(S,get(c[1]));break;
+    case'bup':upgradeBld(S,get(c[1]));break;
+    case'res':startRes(S,c[1]);break;
+    case'hq':upgradeHQ(S);break;
+    case'sup':{const b=get(c[1]);if(b&&b.side===sid&&b.type==='sup')fireSup(S,b,+c[2],+c[3]);break}
+    case'rally':for(const b of mine(c[1]))if(b.k==='b'&&PRODB.includes(b.type))b.rally={x:+c[2],y:+c[3]};break;
+    case'mv':cmdMove(mine(c[1]).filter(e=>e.k==='u'),+c[2],+c[3],c[4]==='amove'?'amove':'move');break;
+    case'atk':{const t=get(c[2]);if(t&&hostile(t.side,sid))cmdAttack(mine(c[1]).filter(e=>e.k==='u'),t);break}
+    case'bunk':{const t=get(c[2]);if(t&&t.type==='tech'&&!t.opened){const us=mine(c[1]).filter(u=>u.k==='u'&&u.s.arm==='inf');for(const u of us)u.bunker=t;cmdMove(us,t.x,t.y+T*1.4,'move')}break}
+    case'der':{const t=get(c[2]);if(t&&t.side===sid&&t.type==='der')for(const u of mine(c[1]))if(u.type==='oil'){u.der=t;u.st='toDer';const d=dock(t);reqPath(u,d.x,d.y)}break}
+    case'stop':for(const u of mine(c[1]))if(u.k==='u'){u.path=null;u.ord=null;u.tgt=null}break;
+    case'quit':for(const e of ents)if(!e.dead&&e.side===sid&&e.k==='b')kill(e,null);break}}
