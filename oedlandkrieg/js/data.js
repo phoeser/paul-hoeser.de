@@ -16,6 +16,7 @@ const U={
  heavy:{hp:480,spd:32,rng:5.5,dmg:52,wpn:'cannon',cd:2.4,cost:700,time:18,arm:'heavy',r:15,sight:7,from:'fac',lvl:2},
  art:{hp:200,spd:24,rng:11,min:3,dmg:62,wpn:'shell',cd:4.5,cost:900,time:20,arm:'light',r:13,sight:7,from:'fac',req:['rad']},
  mbt:{hp:1300,spd:26,rng:6,dmg:85,wpn:'cannon',cd:2.6,cost:1600,time:30,arm:'heavy',r:19,sight:7,from:'fac',req:['lab']},
+ trans:{hp:420,spd:85,rng:0,dmg:0,cost:500,time:14,arm:'air',r:16,sight:8,from:'fac',air:true,cap:6},
  heli:{hp:320,spd:95,rng:5,dmg:24,wpn:'rocket',cd:1.3,cost:1100,time:22,arm:'air',r:14,sight:9,from:'air',air:true},
  jet:{hp:280,spd:150,rng:6,dmg:55,wpn:'rocket',cd:1.6,cost:1600,time:26,arm:'air',r:15,sight:10,from:'air',air:true},
  elite:{hp:950,spd:40,rng:6.5,dmg:75,wpn:'laser',cd:1.5,arm:'heavy',r:17,sight:8,cost:0}
@@ -39,17 +40,17 @@ const B={
  air:{w:3,h:3,hp:1000,cost:1200,time:20,sight:6,req:['rad'],pw:40},
  lab:{w:3,h:3,hp:1200,cost:1500,time:25,sight:5,req:['rad','rep'],pw:60},
  sup:{w:3,h:3,hp:1800,cost:2500,time:35,sight:5,req:['lab'],pw:80,charge:300},
- tech:{w:2,h:2,hp:99999,sight:0}
+ tech:{w:2,h:2,hp:3000,sight:0}
 };
-const BORDER=['pow','ref','der','bar','wall','tow','fac','sil','scr','rep','ctow','rad','rtow','air','lab','sup'],UORDER=['inf','rkt','scout','flame','med','fast','oil','heavy','art','mbt','heli','jet'];
+const BORDER=['pow','ref','der','bar','wall','tow','fac','sil','scr','rep','ctow','rad','rtow','air','lab','sup'],UORDER=['inf','rkt','scout','flame','med','fast','oil','trans','heavy','art','mbt','heli','jet'];
 const PRODB=['bar','fac','air'];
 const FAC={
  bunker:{name:'Bunkerleute',
-  u:{inf:'Gewehrschütze',rkt:'Bazooka-Trupp',scout:'Motorrad-Späher',flame:'Flammenwerfer',med:'Sanitäter',fast:'Kampfbuggy',heavy:'Kettenpanzer',oil:'Tanklaster',art:'Haubitze',mbt:'Mammutpanzer',heli:'Kampfhubschrauber',jet:'Jagdbomber',elite:'Laser-Prototyp'},
+  u:{inf:'Gewehrschütze',rkt:'Bazooka-Trupp',scout:'Motorrad-Späher',flame:'Flammenwerfer',med:'Sanitäter',fast:'Kampfbuggy',heavy:'Kettenpanzer',oil:'Tanklaster',trans:'Truppentransporter',art:'Haubitze',mbt:'Mammutpanzer',heli:'Kampfhubschrauber',jet:'Jagdbomber',elite:'Laser-Prototyp'},
   b:{hq:'Bunker-Kommando',pow:'Kraftwerk',ref:'Raffinerie',der:'Bohrturm',bar:'Kaserne',wall:'Betonmauer',tow:'MG-Turm',fac:'Panzerwerk',sil:'Öltank-Lager',scr:'Schrottpresse',rep:'Werkstatt',ctow:'Kanonenbunker',rad:'Radarstation',rtow:'Raketenturm',air:'Helipad',lab:'Forschungslabor',sup:'Atomraketensilo',tech:'Tech-Bunker'},
   sup:'Atomrakete',mod:{}},
  mutant:{name:'Mutanten',
-  u:{inf:'Plünderer',rkt:'Raketen-Irrer',scout:'Rattenreiter',flame:'Feuerteufel',med:'Knochenflicker',fast:'Hyänenreiter',heavy:'Kriegsmammut',oil:'Ölochse',art:'Katapult-Echse',mbt:'Behemoth',heli:'Riesengeier',jet:'Feuerdrache',elite:'Riesenskorpion'},
+  u:{inf:'Plünderer',rkt:'Raketen-Irrer',scout:'Rattenreiter',flame:'Feuerteufel',med:'Knochenflicker',fast:'Hyänenreiter',heavy:'Kriegsmammut',oil:'Ölochse',trans:'Lastgeier',art:'Katapult-Echse',mbt:'Behemoth',heli:'Riesengeier',jet:'Feuerdrache',elite:'Riesenskorpion'},
   b:{hq:'Häuptlingsfestung',pow:'Strahlenkessel',ref:'Ölkocherei',der:'Ölpumpe',bar:'Schlägergrube',wall:'Schrottwall',tow:'Schrottturm',fac:'Bestienzucht',sil:'Ölgrube',scr:'Schrottmühle',rep:'Flickbude',ctow:'Felsschleuder',rad:'Ausguck',rtow:'Raketennest',air:'Geierhorst',lab:'Mutationsgrube',sup:'Seuchenkessel',tech:'Tech-Bunker'},
   sup:'Seuchenbombe',mod:{inf:{hp:88,cost:90,rng:3.6,dmg:11},rkt:{hp:74},scout:{hp:100},flame:{hp:125},fast:{wpn:'melee',rng:1.3,dmg:20,cd:.8,hp:180,spd:78},heavy:{hp:570,spd:29},mbt:{wpn:'melee',rng:1.7,dmg:150,cd:1.6,hp:1500,spd:30},heli:{hp:340},jet:{hp:310,spd:140},elite:{wpn:'melee',rng:1.8,dmg:110,cd:1.3,hp:1050,spd:46}}}
 };
@@ -57,7 +58,7 @@ const FAC={
 const organic=u=>u.s.arm==='inf'||(sides[u.side].fac==='mutant'&&u.type!=='oil'&&u.type!=='elite');
 const DIFF={easy:{inc:.5,first:480,wave:3,grow:1,mix:0,maxw:10,think:1.5,gap:150,cap:18,name:'Leicht'},normal:{inc:.75,first:340,wave:4,grow:1,mix:.08,maxw:16,think:1.15,gap:110,cap:28,name:'Normal'},hard:{inc:.95,first:240,wave:5,grow:2,mix:.18,maxw:22,think:1,gap:80,cap:40,name:'Schwer'},brutal:{inc:1.25,first:170,wave:6,grow:2,mix:.28,maxw:28,think:.9,gap:60,cap:55,name:'Brutal'}};
 const COL=['#e6a92a','#c8352c','#3a8ee0','#a45ad8'],CNAME=['Gelb','Rot','Blau','Lila'];
-const BUPG=['ref','der','bar','fac','tow','pow','ctow','rtow','rep','scr'];const bupCost=b=>Math.round(B[b.type].cost*.6*b.lvl),bupTime=b=>8+b.lvl*6;
+const BUPG=['ref','der','bar','fac','tow','pow','ctow','rtow','rep','scr','sil','rad','air','lab','sup'];const bupCost=b=>Math.round(B[b.type].cost*.6*b.lvl),bupTime=b=>8+b.lvl*6;
 const RES={infW:{at:'bar',n:'Waffen Fußtruppen',ic:'🔫',c:[350,700],t:[18,26]},infA:{at:'bar',n:'Panzerung Fußtruppen',ic:'🛡',c:[300,600],t:[16,24]},vehW:{at:'fac',n:'Waffen Fahrzeuge & Bestien',ic:'💥',c:[500,1000],t:[22,30]},vehA:{at:'fac',n:'Panzerung Fahrzeuge & Bestien',ic:'🛡',c:[450,900],t:[20,28]}};
 const ROM=['','I','II'];
 const isInf=u=>u.s.arm==='inf';const techW=u=>u.k==='u'?1+.15*(sides[u.side].tech[isInf(u)?'infW':'vehW']||0):1,techA=u=>u.k==='u'?1+.15*(sides[u.side].tech[isInf(u)?'infA':'vehA']||0):1;
@@ -72,4 +73,4 @@ const power=S=>{let p=0,u=0;for(const b of ents)if(!b.dead&&b.k==='b'&&b.side===
 const pf=S=>S.pw&&S.pw.low?.5:1;
 const blocked=(x,y)=>x<0||y<0||x>=MW||y>=MH||tiles[y*MW+x]===1||occ[y*MW+x]>0;
 // Beschreibung für später hinzugekommene Einheiten (die Texte stehen sonst in ui.js)
-addEventListener('load',()=>{if(typeof DESC!=='undefined')DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.'});
+addEventListener('load',()=>{if(typeof DESC==='undefined')return;DESC.trans='Fliegt bis zu 6 Fußtruppen über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit Taste U. Unbewaffnet.';DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.'});
