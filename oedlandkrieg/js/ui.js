@@ -50,10 +50,10 @@ function updUI(force){const S=sides[me];{const sig=tab+(tab==='b'?BORDER:UORDER)
     b.classList.toggle('ready',ready);if(ready){if(!rd){rd=document.createElement('div');rd.className='rd';b.appendChild(rd)}rd.textContent=S.bq.left?'NOCH '+S.bq.left:'PLATZIEREN'}else if(rd)rd.remove();
     if(busy){if(!sh){sh=document.createElement('div');sh.className='shade';b.appendChild(sh)}}else if(sh)sh.remove()}
   if(force||(uiT+=1)%6===0)infoUI()}
-function bupInfo(t){return{ref:'+20 % Öl je Stufe',der:'Laster laden schneller',bar:'bildet 35 % schneller aus',fac:'baut 35 % schneller',tow:'mehr Schaden und Reichweite'}[t]+', +30 % Haltbarkeit'}
+function bupInfo(t){const m={ref:'+20 % Öl je Stufe',der:'Laster laden schneller',bar:'bildet 35 % schneller aus',fac:'baut 35 % schneller',air:'baut 35 % schneller',tow:'mehr Schaden und Reichweite',ctow:'mehr Schaden und Reichweite',rtow:'mehr Schaden und Reichweite',pow:'+50 % Strom je Stufe',rep:'repariert schneller',scr:'verarbeitet schneller'}[t];return(m?m+', ':'')+'+30 % Haltbarkeit'}
 function setInfo(h){const box=$('info');if(box._h!==h){box._h=h;box.innerHTML=h}}
 $('info').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b||b.disabled)return;ev.preventDefault();sfx('click');
-  if(b.id==='iSell')act(['sell',+b.dataset.id]);else if(b.id==='iUp')act(['hq']);else if(b.id==='iNuke'){supMode=sel.find(x=>!x.dead&&x.id===+b.dataset.id);say('Ziel auf der Karte wählen – Rechtsklick bricht ab','',true)}else if(b.id==='iBup')act(['bup',+b.dataset.id]);else if(b.dataset.res){act(['res',b.dataset.res]);infoUI()}});
+  if(b.id==='iSell')act(['sell',+b.dataset.id]);else if(b.id==='iUp')act(['hq']);else if(b.id==='iNuke'){supMode=sel.find(x=>!x.dead&&x.id===+b.dataset.id);say('Ziel auf der Karte wählen – Rechtsklick bricht ab','',true)}else if(b.id==='iBup')act(['bup',+b.dataset.id]);else if(b.id==='iUnl')act(['unload',+b.dataset.id]);else if(b.dataset.res){act(['res',b.dataset.res]);infoUI()}});
 function infoUI(){if(hoverT){setInfo(descHTML(hoverT));return}const S=sides[me],box=$('info');const s=sel.filter(e=>!e.dead);
   if(!s.length){setInfo(`<b>${FAC[S.fac].name}</b><br>Einheiten: ${units(me).length} · Gebäude: ${own(me).length}<br><span style="color:#b9a27e">Gegner: ${sides.filter(x=>!x.dead&&hostile(x.id,me)).length}× ${DIFF[cfg.diff].name}</span>`);return}
   if(s.length===1){const e=s[0];const nm=e.k==='b'?(e.side>=0?FAC[sides[e.side].fac].b[e.type]:'Tech-Bunker'):FAC[sides[e.side].fac].u[e.type];
@@ -63,7 +63,8 @@ function infoUI(){if(hoverT){setInfo(descHTML(hoverT));return}const S=sides[me],
     if(e.k==='b'&&e.type==='rad')h+='<br><span style="color:#b9a27e">Zeigt Feinde auf der Minikarte (mit Strom)</span>';
     if(e.k==='b'&&e.type==='rep')h+='<br><span style="color:#b9a27e">Repariert Fahrzeuge und Gebäude in der Nähe</span>';
     if(e.k==='b'&&e.type==='pow')h+=`<br>Erzeugt ${Math.round(-B.pow.pw*(1+(e.lvl-1)*.5))} Strom`;else if(e.k==='b'&&B[e.type].pw>0)h+=`<br><span style="color:#b9a27e">Verbraucht ${B[e.type].pw} Strom</span>`;
-    if(e.k==='u'&&e.type==='oil')h+=`<br>Ladung: ${e.load} Öl`;if(e.k==='b'&&e.type==='der')h+=`<br>Ölvorrat: ${Math.max(0,e.oil)}`;
+    if(e.k==='u'&&e.type==='oil')h+=`<br>Ladung: ${e.load} Öl`;
+    if(e.k==='u'&&e.type==='trans'){h+=`<br>An Bord: ${e.load||0} von ${e.s.cap} Fußtruppen`;if(e.side===me)h+=e.load?`<button class="sbtn" id="iUnl" data-id="${e.id}">⬇ Truppen absetzen (U)</button>`:'<br><span style="color:#b9a27e">Fußtruppen wählen, dann Rechtsklick auf den Transporter</span>'}if(e.k==='b'&&e.type==='der')h+=`<br>Ölvorrat: ${Math.max(0,e.oil)}`;
     if(e.k==='u'&&e.kills)h+=`<br>Abschüsse: ${e.kills}`;
     if(e.side===me&&e.type==='hq')h+=S.lvl>1?'<br>✔ Ausgebaut':S.upg?`<br>Ausbau läuft … ${Math.floor(S.upg.t/S.upg.total*100)} %`:`<button class="sbtn" id="iUp" ${S.money<1200?'disabled':''}>⬆ Ausbau (1200 $)</button>`;
     if(e.k==='b'&&BUPG.includes(e.type))h+=`<br><span style="color:#ffcf5a">Stufe ${e.lvl}</span> · <span style="color:#b9a27e">${bupInfo(e.type)}</span>`;
@@ -95,7 +96,8 @@ function command(wx,wy,forceAtk){const mine=sel.filter(e=>!e.dead&&e.side===me);
   const us=mine.filter(e=>e.k==='u'),bs=mine.filter(e=>e.k==='b'),ids=a=>a.map(e=>e.id);
   if(!us.length&&bs.length){act(['rally',ids(bs),wx,wy]);for(const b of bs)if(PRODB.includes(b.type))b.rally={x:wx,y:wy};marks.push({x:wx,y:wy,l:1,c:'#7aff6a'});return}
   const t=entAt(wx,wy);
-  if(t&&hostile(t.side,me)){act(['atk',ids(us),t.id]);marks.push({x:t.x,y:t.y,l:1,c:'#ff4a3a'});sfx('click');return}
+  if(t&&t.side===me&&t.type==='trans'){const inf=us.filter(u=>u.s.arm==='inf');if(inf.length){act(['load',ids(inf),t.id]);marks.push({x:t.x,y:t.y,l:1,c:'#7ae8ff'});sfx('click');return}}
+  if(t&&(hostile(t.side,me)||t.type==='tech'&&(forceAtk||atkMode||t.opened||!us.some(u=>u.s.arm==='inf')))){act(['atk',ids(us),t.id]);marks.push({x:t.x,y:t.y,l:1,c:'#ff4a3a'});sfx('click');return}
   if(t&&t.type==='tech'&&!t.opened){const inf=us.filter(u=>u.s.arm==='inf');if(inf.length){act(['bunk',ids(inf),t.id]);marks.push({x:t.x,y:t.y,l:1,c:'#7ae8ff'});const rest=us.filter(u=>u.s.arm!=='inf');if(rest.length)act(['mv',ids(rest),t.x,t.y+T*2.5,'move']);return}}
   if(t&&t.side===me&&t.k==='b'&&t.type==='der'){const tk=us.filter(u=>u.type==='oil');if(tk.length)act(['der',ids(tk),t.id]);const rest=us.filter(u=>u.type!=='oil');if(rest.length)act(['mv',ids(rest),wx,wy,'move']);if(tk.length)return}
   const mv=us.filter(u=>u.type!=='oil'||!t);if(mv.length)act(['mv',ids(mv),wx,wy,forceAtk||atkMode?'amove':'move']);marks.push({x:wx,y:wy,l:1,c:forceAtk||atkMode?'#ff4a3a':'#7aff6a'});sfx('click')}
@@ -119,7 +121,7 @@ cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(pinch){if(ptrs.s
   if(supMode){act(['sup',supMode.id,w.x,w.y]);supMode=null;return}
   if(atkMode){command(w.x,w.y,true);atkMode=false;updTop();return}
   const now=performance.now(),e2=entAt(w.x,w.y),dbl=now-lastTap.t<350&&e2&&lastTap.id===e2.id;lastTap={t:now,id:e2?e2.id:0};
-  if(d.touch){const mine=sel.filter(x=>x.side===me&&x.k==='u'&&!x.dead);if(e2&&e2.side===me&&!(mine.length&&e2.k==='b'&&e2.type==='der'&&mine.some(u=>u.type==='oil'))){selectAt(w.x,w.y,false,dbl);return}
+  if(d.touch){const mine=sel.filter(x=>x.side===me&&x.k==='u'&&!x.dead);if(e2&&e2.side===me&&!(mine.length&&e2.k==='b'&&e2.type==='der'&&mine.some(u=>u.type==='oil'))&&!(e2.type==='trans'&&!sel.includes(e2)&&mine.some(u=>u.s.arm==='inf'))){selectAt(w.x,w.y,false,dbl);return}
     if(mine.length||sel.some(x=>x.side===me&&x.k==='b'&&PRODB.includes(x.type))){command(w.x,w.y);return}selectAt(w.x,w.y,false,false);return}
   selectAt(w.x,w.y,d.shift,dbl)});
 cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);drag=null;pinch=null});
@@ -134,7 +136,7 @@ mini.addEventListener('pointerup',()=>miniDrag=false);
 window.addEventListener('keydown',e=>{if($('start').classList.contains('hidden')===false)return;keys[e.key]=true;const k=e.key.toLowerCase();
   if(k==='escape'||k==='p'){if(supMode){supMode=null;return}if(placing){placing=null;return}if(atkMode){atkMode=false;updTop();return}togglePause();return}
   if(paused)return;
-  if(k==='a'){atkMode=!atkMode;updTop()}else if(k==='s'){stopSel()}else if(k==='h'){home()}else if(k==='q'){selArmy()}else if(k===' '){e.preventDefault();const al=sides[me].alarm;if(al&&time-al.t<40){camX=al.x-viewW()/2;camY=al.y-viewH()/2;clampCam()}else home()}
+  if(k==='a'){atkMode=!atkMode;updTop()}else if(k==='s'){stopSel()}else if(k==='h'){home()}else if(k==='q'){selArmy()}else if(k==='u'){for(const x of sel)if(x.type==='trans'&&x.side===me)act(['unload',x.id])}else if(k===' '){e.preventDefault();const al=sides[me].alarm;if(al&&time-al.t<40){camX=al.x-viewW()/2;camY=al.y-viewH()/2;clampCam()}else home()}
   else if(/^[1-9]$/.test(k)){if(e.ctrlKey){e.preventDefault();groups[k]=sel.filter(x=>x.k==='u');say(`Gruppe ${k} gespeichert`,'',true)}else if(groups[k]){const g=groups[k].filter(x=>!x.dead);if(sel.length===g.length&&sel.every(x=>g.includes(x))&&g.length){camX=g[0].x-viewW()/2;camY=g[0].y-viewH()/2;clampCam()}sel=g;infoUI()}}});
 window.addEventListener('keyup',e=>{keys[e.key]=false});
 function stopSel(){act(['stop',sel.filter(u=>u.k==='u'&&u.side===me).map(u=>u.id)])}
@@ -142,6 +144,7 @@ function home(){const h=own(me,'hq')[0]||own(me)[0]||units(me)[0];if(h){camX=h.x
 function updTop(){$('tAtk').classList.toggle('on',atkMode);$('tBox').classList.toggle('on',boxMode)}
 $('tAtk').onclick=()=>{atkMode=!atkMode;updTop()};$('tStop').onclick=stopSel;$('tHome').onclick=home;$('tBox').onclick=()=>{boxMode=!boxMode;updTop()};$('tMenu').onclick=()=>togglePause();
 {const b=document.createElement('button');b.className='tbtn';b.textContent='🪖';b.title='Alle Kampftruppen wählen (Q)';b.onclick=selArmy;$('topbar').appendChild(b)}
+{const b=document.createElement('button');b.className='tbtn';b.textContent='💾';b.title='Spielstand speichern';b.onclick=()=>{if(!sides.length||typeof saveGame!=='function')return;if(NET.on)say('Online-Spiele lassen sich nicht speichern','bad',true);else saveGame('man')};$('topbar').appendChild(b)}
 
 /* ======================= Ablauf ======================= */
 function newGame(){hintT=12;nukes=[];supMode=null;shake=0;MW=MH=cfg.players>2?Math.max(64,cfg.size):cfg.size;ents=[];nextId=1;projs=[];tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};time=0;over=false;placing=null;atkMode=false;msgT={};
@@ -171,12 +174,13 @@ const HELP=`<h2>So wird gespielt</h2><ul>
 <li><b>Steuern (Maus):</b> Linksklick wählt aus, Rahmen ziehen wählt mehrere, Doppelklick wählt alle gleichen. Rechtsklick bewegt bzw. greift an. Mausrad zoomt, Bildschirmrand/Pfeiltasten/Mitteltaste scrollen.</li>
 <li><b>Tablet:</b> Antippen wählt aus, danach auf den Boden oder einen Feind tippen. Mit einem Finger ziehen scrollt, mit ⬚ ziehst du einen Auswahlrahmen, zwei Finger zoomen.</li>
 <li><b>Tasten:</b> <kbd>A</kbd> Angriffsbewegung, <kbd>S</kbd> Stopp, <kbd>H</kbd> zur Basis, <kbd>Q</kbd> alle Kampftruppen wählen, <kbd>Leertaste</kbd> zum letzten Angriff springen, <kbd>Strg</kbd>+<kbd>1–9</kbd> Gruppe speichern, <kbd>1–9</kbd> Gruppe wählen, <kbd>Esc</kbd> Pause.</li>
-<li><b>Tech-Bunker</b> ☢: Schick Fußsoldaten hin – darin wartet eine mächtige Spezialeinheit.</li>
+<li><b>Tech-Bunker</b> ☢: Schick Fußsoldaten hin – darin wartet eine mächtige Spezialeinheit. Mit der Angriffsbewegung (<kbd>A</kbd>, dann anklicken) lässt er sich auch zerstören, bevor der Gegner ihn öffnet.</li>
+<li><b>Truppentransporter:</b> Kommt aus dem Panzerwerk und fliegt bis zu 8 Fußtruppen aller Art über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit <kbd>U</kbd>. Wird er abgeschossen, sind die Truppen an Bord verloren.</li>
 <li><b>Technologiebaum:</b> Gebäude schalten weitere frei (🔒 zeigt, was fehlt). Beispiel: Panzerwerk + Kraftwerk → Radar → Raketenturm, Flugfeld; Radar + Werkstatt → Labor → Superwaffe.</li>
 <li><b>Strom:</b> Kraftwerke liefern Strom. Bei Strommangel (roter Balken) läuft alles halb so schnell.</li>
 <li><b>Mauern:</b> Ein Kauf reicht für bis zu 3 Mauerstücke nacheinander (je 40 $), dann ist die Mauer verbraucht. Rechtsklick beendet vorher.</li>
 <li><b>Superwaffe:</b> Kraftwerk + Panzerwerk → Radar und Werkstatt → Labor → Silo. Das Silo lädt 5 Minuten; dann Silo anklicken, abfeuern und Ziel wählen.</li>
-<li><b>Pause und Spielstand:</b> ⏸ oben links oder Taste <kbd>P</kbd> hält an (online für alle). Im Menü ☰ kannst du Spiele gegen den Computer speichern und laden; zusätzlich wird alle 2 Minuten automatisch gesichert.</li>
+<li><b>Pause und Spielstand:</b> ⏸ oben links oder Taste <kbd>P</kbd> hält an (online für alle). Mit 💾 oben links speicherst du ein Spiel gegen den Computer, laden kannst du im Menü ☰ oder im Startbild; zusätzlich wird alle 2 Minuten automatisch gesichert.</li>
 <li><b>Ausbauen:</b> Eigenes Gebäude anklicken → „Auf Stufe 2/3“. Kaserne und Panzerwerk erforschen außerdem Waffen und Panzerung für deine Truppen (wirkt auch auf alle vorhandenen).</li>
 <li><b>Mit anderen spielen:</b> Im Startbild „Mit anderen spielen“ wählen, Raum eröffnen und den Link verschicken. Bis zu 4 Parteien – zusammen gegen den Computer oder jeder gegen jeden. Verlässt jemand das Spiel, übernimmt der Computer.</li>
 <li><b>Hilfe im Spiel:</b> Fahre mit der Maus über einen Bau-Knopf – unten steht, was das Gebäude oder die Einheit kann.</li>
