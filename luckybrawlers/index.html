@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#141a33">
+<title>Lucky Brawlers</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#141a33;color:#fff;font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;font-size:17px;overscroll-behavior:none}
+canvas#cv{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:block}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:16px 12px 40px;background:radial-gradient(circle at 50% 0,#3b2a8c 0,#1b1f4a 55%,#11142e 100%)}
+#end{background:rgba(12,14,36,.82)}
+.card{width:100%;max-width:720px;background:rgba(255,255,255,.07);border:3px solid rgba(255,255,255,.16);border-radius:22px;padding:18px 16px;display:flex;flex-direction:column;gap:12px;margin:auto}
+h1{margin:0;text-align:center;font-size:clamp(38px,9vw,64px);line-height:1;letter-spacing:1px;color:#ffd23f;-webkit-text-stroke:2px #1a1a2a;text-shadow:0 5px 0 #c2410c,0 9px 0 rgba(0,0,0,.35);transform:rotate(-2deg)}
+h1 span{color:#5ad1ff}
+h2{margin:0;text-align:center;font-size:30px;color:#ffd23f;text-shadow:0 3px 0 rgba(0,0,0,.4)}
+p{margin:0;text-align:center;line-height:1.35}
+.sub{color:#c9ceff}
+.lead{font-size:20px}
+.code{font-size:34px;letter-spacing:5px;color:#ffd23f}
+.msg{color:#ffb4a8;font-weight:bold;min-height:1.3em}
+label{font-weight:bold;color:#c9ceff}
+input{width:100%;font:inherit;font-size:19px;padding:11px 12px;border-radius:13px;border:3px solid #5560c8;background:#0f1230;color:#fff;outline:none;min-width:0}
+input:focus{border-color:#ffd23f}
+.row{display:flex;gap:10px;align-items:stretch}
+.row>*{flex:1}
+.btn{font:inherit;font-weight:bold;font-size:19px;color:#fff;background:#4a56d6;border:0;border-bottom:5px solid #2b338f;border-radius:15px;padding:13px 12px;cursor:pointer;touch-action:manipulation}
+.btn:active{transform:translateY(3px);border-bottom-width:2px}
+.btn.go{background:#ff9d1c;border-bottom-color:#b4580a;font-size:23px;padding:16px 12px}
+.btn.sec{background:#3a3f6e;border-bottom-color:#22264a}
+.btn.sm{font-size:17px;padding:10px 8px}
+.btn.on{background:#22b455;border-bottom-color:#12703a}
+.mode small{display:block;font-weight:normal;font-size:16px;margin-top:3px;opacity:.9}
+.heroes{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.hero{font:inherit;color:#fff;background:rgba(255,255,255,.07);border:3px solid rgba(255,255,255,.14);border-radius:16px;padding:6px 5px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;touch-action:manipulation}
+.hero.on{border-color:var(--c);background:rgba(255,255,255,.2);box-shadow:0 0 0 3px var(--c)}
+.hero canvas{width:76px;height:76px}
+.hero b{font-size:18px}
+.hero small{font-size:16px;line-height:1.25;color:#d8dcff}
+.heroes.sm .hero canvas{width:56px;height:56px}
+.heroes.sm .hero small{display:none}
+.plist{display:flex;flex-direction:column;gap:5px;background:rgba(0,0,0,.25);border-radius:14px;padding:10px 12px}
+.plist i{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:8px;border:2px solid #1a1a2a;vertical-align:-1px}
+.plist .cpu{color:#aab0e8}
+.plist .foe{color:#ffb4a8}
+.how{font-size:16px;color:#c9ceff}
+#hud{position:fixed;inset:0;pointer-events:none}
+#top{position:absolute;top:calc(8px + env(safe-area-inset-top));left:0;right:0;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;font-weight:bold;font-size:18px;padding:0 56px}
+#top span{padding:6px 12px;border-radius:13px;background:rgba(12,14,36,.78);border:2px solid rgba(255,255,255,.2)}
+#top .tb{color:#7fd0ff}#top .tr{color:#ff8f80}#top .cd{color:#ffd23f}
+.feed{position:absolute;top:44px;right:8px;text-align:right;font-size:16px;font-weight:normal;display:flex;flex-direction:column;gap:3px}
+.feed div{background:rgba(12,14,36,.6);padding:2px 8px;border-radius:9px}
+#bQuit{position:absolute;top:calc(8px + env(safe-area-inset-top));left:8px;pointer-events:auto;width:42px;height:42px;border-radius:13px;border:2px solid rgba(255,255,255,.25);background:rgba(12,14,36,.78);color:#fff;font-size:20px;font-weight:bold;cursor:pointer}
+#bSup{--p:0%;position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));pointer-events:auto;width:82px;height:82px;border-radius:50%;border:4px solid #1a1a2a;color:#fff;font:inherit;font-weight:bold;font-size:17px;cursor:pointer;touch-action:none;background:conic-gradient(#ffd23f var(--p),rgba(20,24,60,.85) 0)}
+#bSup.rdy{color:#1a1a2a;animation:pls .7s infinite alternate;box-shadow:0 0 22px #ffd23f}
+@keyframes pls{to{transform:scale(1.1)}}
+@media(max-height:520px){#bSup{bottom:calc(120px + env(safe-area-inset-bottom));width:70px;height:70px}}
+@media(max-width:480px){.heroes{grid-template-columns:repeat(2,1fr)}.btn{font-size:18px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="top"></div>
+  <button id="bQuit" title="Spiel verlassen">✕</button>
+  <button id="bSup">SUPER</button>
+</div>
+
+<div id="menu" class="screen">
+  <div class="card">
+    <h1>Lucky <span>Brawlers</span></h1>
+    <p class="sub">Schnelle Arena-Kämpfe – mit Freunden, mit Fremden und mit dem Computer.</p>
+    <p class="msg" id="msg"></p>
+    <label for="name">Dein Name</label>
+    <input id="name" maxlength="12" placeholder="Spieler" autocomplete="off">
+    <label>Dein Held</label>
+    <div class="heroes" id="heroes"></div>
+    <label>Spielart</label>
+    <div class="row">
+      <button class="btn mode" id="m_gem">💎 Juwelenjagd<small>3 gegen 3</small></button>
+      <button class="btn mode" id="m_solo">👑 Jeder gegen jeden<small>10 Helden, einer gewinnt</small></button>
+    </div>
+    <button class="btn go" id="bQuick">⚡ Schnelles Spiel</button>
+    <button class="btn" id="bPriv">👥 Privaten Raum eröffnen</button>
+    <div class="row"><input id="code" maxlength="8" placeholder="Raum-Code" autocomplete="off" autocapitalize="characters"><button class="btn" id="bJoin">Beitreten</button></div>
+    <button class="btn sec" id="bTrain">🤖 Training gegen den Computer</button>
+    <p class="how"><b>Handy/Tablet:</b> linker Daumen bewegt, rechter Daumen zielt – loslassen schießt, kurz tippen zielt von selbst. <b>PC:</b> WASD bewegen, Maus zielen, Klick schießen, Leertaste Super.</p>
+  </div>
+</div>
+
+<div id="lobby" class="screen hidden"></div>
+<div id="wait" class="screen hidden"><div class="card"><h2 id="waitT">Einen Moment …</h2><button class="btn sec" id="waitX">Abbrechen</button></div></div>
+<div id="end" class="screen hidden"></div>
+
+<script src="js/game.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/net.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
