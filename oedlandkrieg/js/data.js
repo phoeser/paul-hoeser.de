@@ -16,7 +16,7 @@ const U={
  heavy:{hp:480,spd:32,rng:5.5,dmg:52,wpn:'cannon',cd:2.4,cost:700,time:18,arm:'heavy',r:15,sight:7,from:'fac',lvl:2},
  art:{hp:200,spd:24,rng:11,min:3,dmg:62,wpn:'shell',cd:4.5,cost:900,time:20,arm:'light',r:13,sight:7,from:'fac',req:['rad']},
  mbt:{hp:1300,spd:26,rng:6,dmg:85,wpn:'cannon',cd:2.6,cost:1600,time:30,arm:'heavy',r:19,sight:7,from:'fac',req:['lab']},
- trans:{hp:420,spd:85,rng:0,dmg:0,cost:500,time:14,arm:'air',r:16,sight:8,from:'fac',air:true,cap:6},
+ trans:{hp:420,spd:85,rng:0,dmg:0,cost:500,time:14,arm:'air',r:16,sight:8,from:'fac',air:true,cap:8},
  heli:{hp:320,spd:95,rng:5,dmg:24,wpn:'rocket',cd:1.3,cost:1100,time:22,arm:'air',r:14,sight:9,from:'air',air:true},
  jet:{hp:280,spd:150,rng:6,dmg:55,wpn:'rocket',cd:1.6,cost:1600,time:26,arm:'air',r:15,sight:10,from:'air',air:true},
  elite:{hp:950,spd:40,rng:6.5,dmg:75,wpn:'laser',cd:1.5,arm:'heavy',r:17,sight:8,cost:0}
@@ -73,4 +73,4 @@ const power=S=>{let p=0,u=0;for(const b of ents)if(!b.dead&&b.k==='b'&&b.side===
 const pf=S=>S.pw&&S.pw.low?.5:1;
 const blocked=(x,y)=>x<0||y<0||x>=MW||y>=MH||tiles[y*MW+x]===1||occ[y*MW+x]>0;
 // Beschreibung für später hinzugekommene Einheiten (die Texte stehen sonst in ui.js)
-addEventListener('load',()=>{if(typeof DESC==='undefined')return;DESC.trans='Fliegt bis zu 6 Fußtruppen über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit Taste U. Unbewaffnet.';DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.'});
+addEventListener('load',()=>{if(typeof DESC==='undefined')return;DESC.trans='Fliegt bis zu 8 Fußtruppen aller Art über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit Taste U. Unbewaffnet.';DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.'});
