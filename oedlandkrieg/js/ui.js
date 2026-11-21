@@ -1,6 +1,24 @@
 "use strict";
 /* ======================= Seitenleiste ======================= */
-let tab='b',uiT=0;
+let tab='b',uiT=0,hoverT=null,hintT=12;
+const DESC={pow:'Liefert 100 Strom. Ohne genug Strom läuft alles halb so schnell.',ref:'Hier liefern die Laster das Öl ab. Bringt einen Laster mit.',der:'Fördert Öl. Nur auf schwarzen Ölfeldern.',bar:'Bildet Fußtruppen aus und erforscht ihre Ausrüstung.',wall:'Hält Bodentruppen auf. Mehrere nacheinander setzen, Rechtsklick beendet.',tow:'Günstiger Turm gegen Fußtruppen und Flieger.',fac:'Baut Fahrzeuge bzw. Bestien und erforscht ihre Ausrüstung.',sil:'+10 % Öl-Ertrag (bis zu 3 Stück).',scr:'Macht aus Schrott Geld. Nur auf Schrottfeldern.',rep:'Repariert Fahrzeuge und Gebäude in der Nähe.',ctow:'Schwerer Turm gegen Fahrzeuge. Trifft keine Flieger.',rad:'Zeigt alle feindlichen Einheiten auf der Minikarte.',rtow:'Große Reichweite, stark gegen Flieger und Fahrzeuge.',air:'Baut Lufteinheiten.',lab:'Schaltet die stärkste Bodeneinheit und die Superwaffe frei.',sup:'Superwaffe. Lädt 5 Minuten, dann Ziel wählen.',
+ inf:'Billig. Gut gegen Fußtruppen, schwach gegen Panzer.',rkt:'Stark gegen Fahrzeuge, Gebäude und Flieger.',scout:'Sehr schnell, sieht weit. Zum Erkunden.',flame:'Kurze Reichweite, verheerend gegen Fußtruppen.',med:'Heilt Verwundete in der Nähe. Kämpft nicht.',fast:'Schnell. Gut gegen Fußtruppen.',oil:'Holt Öl vom Ölfeld zur Raffinerie.',heavy:'Starker Allrounder gegen Fahrzeuge und Gebäude.',art:'Riesige Reichweite, Flächenschaden. Wehrlos im Nahkampf.',mbt:'Stärkste Bodeneinheit.',heli:'Fliegt über alles hinweg. Nur Raketen, MG und Laser treffen.'};
+function descHTML(o){const S=sides[0],t=o.t,d=o.isB?B[t]:stat(0,t),nm=o.isB?FAC[S.fac].b[t]:FAC[S.fac].u[t];let h=`<b>${nm}</b> · <span style="color:#ffcf5a">${d.cost} $</span><br>${DESC[t]||''}`;
+  if(o.isB){if(d.pw>0)h+=`<br><span style="color:#b9a27e">Verbraucht ${d.pw} Strom</span>`}else h+=`<br><span style="color:#b9a27e">Leben ${d.hp}${d.dmg?' · Schaden '+d.dmg+' · Reichweite '+d.rng:''}</span>`;
+  const r=reqText(S,t);if(r)h+=`<br><span style="color:#ff7a5a">🔒 ${r}</span>`;return h}
+function hints(dt){if(over||cfg.demo||(cfg.diff!=='easy'&&cfg.diff!=='normal')||time>720)return;if((hintT-=dt)>0)return;hintT=28;const S=sides[0],has=t=>own(0,t).length,n=FAC[S.fac].b,army=units(0).filter(u=>u.s.dmg).length;let m='';
+  if(S.bq&&S.bq.done)m='Dein Gebäude ist fertig – rechts anklicken und Bauplatz wählen';
+  else if(!has('ref'))m=`Als Erstes brauchst du: ${n.ref} (bringt Öl-Geld)`;
+  else if(!has('der'))m=`Setze „${n.der}“ auf ein schwarzes Ölfeld`;
+  else if(S.pw&&S.pw.low)m=`Zu wenig Strom – baue: ${n.pow}`;
+  else if(!has('bar'))m=`„${n.bar}“ bildet Fußtruppen aus`;
+  else if(army<5)m='Bilde im Reiter „Truppen“ ein paar Kämpfer aus';
+  else if(!has('tow'))m=`„${n.tow}“ schützt deine Basis`;
+  else if(!has('fac'))m=`„${n.fac}“ bringt stärkere Einheiten`;
+  else if(S.lvl<2&&!S.upg)m='Zentrale anklicken und ausbauen – das schaltet schwere Einheiten frei';
+  else if(has('der')<3)m='Mehr Ölfelder bringen mehr Geld';
+  if(m)say('💡 Tipp: '+m,'',true)}
+function selArmy(){sel=units(0).filter(u=>u.s.dmg);sfx('click');infoUI()}
 const iconCache={};
 function iconFor(kind,type,side){const key=kind+type+sides[side].fac;if(iconCache[key])return iconCache[key];const c=document.createElement('canvas');c.width=104;c.height=88;const x=c.getContext('2d');
   x.fillStyle='#2e2416';x.fillRect(0,0,104,88);x.save();
@@ -8,7 +26,7 @@ function iconFor(kind,type,side){const key=kind+type+sides[side].fac;if(iconCach
   else{const r=U[type].r;const s=Math.min(3.6,38/r);x.translate(52,46);x.scale(s,s);drawWith(x,()=>drawUnit({type,side,x:0,y:0,dir:-.5,tdir:-.5,anim:0,s:stat(side,type),path:null,load:0}))}
   x.restore();iconCache[key]=c;return c}
 function drawWith(c2,fn){const old=DC;DC=c2;try{fn()}finally{DC=old}}
-function buildUI(){const S=sides[0];if(!S)return;const box=$('btns');box.innerHTML='';
+function buildUI(){hoverT=null;const S=sides[0];if(!S)return;const box=$('btns');box.innerHTML='';
   const list=tab==='b'?BORDER:UORDER;
   for(const t of list){const isB=tab==='b',d=isB?B[t]:stat(0,t);const b=document.createElement('button');b.className='bb';b.dataset.t=t;
     const ok=reqOK(S,t);if(!ok)b.classList.add('lock');
@@ -17,6 +35,7 @@ function buildUI(){const S=sides[0];if(!S)return;const box=$('btns');box.innerHT
     b.title=ok?(isB?'Linksklick: bauen · Rechtsklick: abbrechen':'Linksklick: ausbilden · Rechtsklick: abbrechen'):reqText(S,t);
     b.onclick=()=>{sfx('click');if(isB){if(S.bq&&S.bq.done&&S.bq.type===t){placing=t;return}if(S.bq){say('Es wird schon gebaut','bad',true);return}if(!ok){say(reqText(S,t),'bad',true);return}startBuild(S,t)}else{if(!ok){say(reqText(S,t),'bad',true);return}queueUnit(S,t)}updUI(true)};
     b.oncontextmenu=e=>{e.preventDefault();if(isB){if(S.bq&&S.bq.type===t){S.money+=B[t].cost;S.bq=null;placing=null}}else{const q=S.uq[d.from];for(let i=q.length-1;i>=0;i--)if(q[i].type===t){S.money+=d.cost;q.splice(i,1);break}}updUI(true)};
+    b.onpointerenter=e=>{if(e.pointerType==='mouse'){hoverT={t,isB};infoUI()}};b.onpointerleave=()=>{hoverT=null;infoUI()};
     box.appendChild(b)}
   updUI(true)}
 let lockSig='';
@@ -45,7 +64,7 @@ function startRes(S,k){const r=RES[k],lv=S.tech[k]||0;if(S.res||lv>=2||!own(S.id
 function upgradeHQ(){const S=sides[0];if(S.money>=1200&&!S.upg&&S.lvl<2){S.money-=1200;S.upg={t:0,total:30};say('Ausbau der Zentrale gestartet','',true);infoUI()}}
 $('info').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b||b.disabled)return;ev.preventDefault();sfx('click');
   if(b.id==='iSell'){const e=sel.find(x=>!x.dead&&x.id===+b.dataset.id);sellBld(e)}else if(b.id==='iUp')upgradeHQ();else if(b.id==='iNuke'){supMode=sel.find(x=>!x.dead&&x.id===+b.dataset.id);say('Ziel auf der Karte wählen – Rechtsklick bricht ab','',true)}else if(b.id==='iBup'){upgradeBld(sel.find(x=>!x.dead&&x.id===+b.dataset.id))}else if(b.dataset.res){startRes(sides[0],b.dataset.res);infoUI()}});
-function infoUI(){const S=sides[0],box=$('info');const s=sel.filter(e=>!e.dead);
+function infoUI(){if(hoverT){setInfo(descHTML(hoverT));return}const S=sides[0],box=$('info');const s=sel.filter(e=>!e.dead);
   if(!s.length){setInfo(`<b>${FAC[S.fac].name}</b><br>Einheiten: ${units(0).length} · Gebäude: ${own(0).length}<br><span style="color:#b9a27e">Gegner: ${DIFF[cfg.diff].name}</span>`);return}
   if(s.length===1){const e=s[0];const nm=e.k==='b'?(e.side>=0?FAC[sides[e.side].fac].b[e.type]:'Tech-Bunker'):FAC[sides[e.side].fac].u[e.type];
     let h=`<b>${nm}</b>${e.k==='u'&&e.vet?' <span style="color:#ffd84a">'+'★'.repeat(e.vet)+'</span>':''}<div class="hpb"><i style="width:${e.hp/e.max*100}%"></i></div>${Math.ceil(e.hp)} / ${Math.ceil(e.max)}`;
@@ -97,7 +116,7 @@ cv.addEventListener('pointerdown',e=>{if(paused||over)return;cv.setPointerCaptur
   if(e.button===1){drag={pan:true,sx:e.offsetX,sy:e.offsetY,cam:{x:camX,y:camY}};return}
   if(e.button===2){if(supMode){supMode=null;return}if(placing){const S=sides[0];if(placing==='wall'&&S.bq&&S.bq.type==='wall'){S.money+=B.wall.cost;S.bq=null}placing=null;return}if(atkMode){atkMode=false;updTop();return}command(w.x,w.y);return}
   drag={sx:e.offsetX,sy:e.offsetY,cx:e.offsetX,cy:e.offsetY,box:false,touch:e.pointerType!=='mouse',shift:e.shiftKey,ctrl:e.ctrlKey}});
-cv.addEventListener('pointermove',e=>{mouse={x:e.offsetX,y:e.offsetY};mouseIn=true;hover=toWorld(e.offsetX,e.offsetY);if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
+cv.addEventListener('pointermove',e=>{mouse={x:e.offsetX,y:e.offsetY};mouseIn=true;hover=toWorld(e.offsetX,e.offsetY);if(e.pointerType==='mouse'&&!drag){const t=entAt(hover.x,hover.y);cv.style.cursor=placing||supMode||atkMode?'crosshair':t&&t.side===1&&sel.some(x=>x.side===0&&x.k==='u')?'crosshair':t&&t.side===0?'pointer':'default'}if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.offsetX,y:e.offsetY});
   if(pinch&&ptrs.size===2){const[p1,p2]=[...ptrs.values()];const d=dist(p1.x,p1.y,p2.x,p2.y),cx=(p1.x+p2.x)/2,cy=(p1.y+p2.y)/2;const wz=clamp(pinch.z*d/pinch.d,.55,1.8);
     const wx=pinch.cam.x+pinch.cx/pinch.z,wy=pinch.cam.y+pinch.cy/pinch.z;zoom=wz;camX=wx-cx/zoom;camY=wy-cy/zoom;clampCam();return}
   if(!drag)return;if(drag.pan){camX=drag.cam.x-(e.offsetX-drag.sx)/zoom;camY=drag.cam.y-(e.offsetY-drag.sy)/zoom;clampCam();return}
@@ -123,18 +142,19 @@ mini.addEventListener('pointerdown',e=>{if(paused)return;const p=miniPos(e);if(e
 mini.addEventListener('pointermove',e=>{if(!miniDrag)return;const p=miniPos(e);camX=p.x-viewW()/2;camY=p.y-viewH()/2;clampCam()});
 mini.addEventListener('pointerup',()=>miniDrag=false);
 window.addEventListener('keydown',e=>{if($('start').classList.contains('hidden')===false)return;keys[e.key]=true;const k=e.key.toLowerCase();
-  if(k==='escape'||k==='p'){if(placing){placing=null;return}if(atkMode){atkMode=false;updTop();return}togglePause();return}
+  if(k==='escape'||k==='p'){if(supMode){supMode=null;return}if(placing){placing=null;return}if(atkMode){atkMode=false;updTop();return}togglePause();return}
   if(paused)return;
-  if(k==='a'){atkMode=!atkMode;updTop()}else if(k==='s'){stopSel()}else if(k==='h'){home()}
+  if(k==='a'){atkMode=!atkMode;updTop()}else if(k==='s'){stopSel()}else if(k==='h'){home()}else if(k==='q'){selArmy()}else if(k===' '){e.preventDefault();const al=sides[0].alarm;if(al&&time-al.t<40){camX=al.x-viewW()/2;camY=al.y-viewH()/2;clampCam()}else home()}
   else if(/^[1-9]$/.test(k)){if(e.ctrlKey){e.preventDefault();groups[k]=sel.filter(x=>x.k==='u');say(`Gruppe ${k} gespeichert`,'',true)}else if(groups[k]){const g=groups[k].filter(x=>!x.dead);if(sel.length===g.length&&sel.every(x=>g.includes(x))&&g.length){camX=g[0].x-viewW()/2;camY=g[0].y-viewH()/2;clampCam()}sel=g;infoUI()}}});
 window.addEventListener('keyup',e=>{keys[e.key]=false});
 function stopSel(){for(const u of sel)if(u.k==='u'&&u.side===0){u.path=null;u.ord=null;u.tgt=null}}
 function home(){const h=own(0,'hq')[0]||own(0)[0]||units(0)[0];if(h){camX=h.x-viewW()/2;camY=h.y-viewH()/2;clampCam()}}
 function updTop(){$('tAtk').classList.toggle('on',atkMode);$('tBox').classList.toggle('on',boxMode)}
 $('tAtk').onclick=()=>{atkMode=!atkMode;updTop()};$('tStop').onclick=stopSel;$('tHome').onclick=home;$('tBox').onclick=()=>{boxMode=!boxMode;updTop()};$('tMenu').onclick=()=>togglePause();
+{const b=document.createElement('button');b.className='tbtn';b.textContent='🪖';b.title='Alle Kampftruppen wählen (Q)';b.onclick=selArmy;$('topbar').appendChild(b)}
 
 /* ======================= Ablauf ======================= */
-function newGame(){nukes=[];supMode=null;shake=0;MW=MH=cfg.size;ents=[];nextId=1;projs=[];tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};time=0;over=false;placing=null;atkMode=false;msgT={};
+function newGame(){hintT=12;nukes=[];supMode=null;shake=0;MW=MH=cfg.size;ents=[];nextId=1;projs=[];tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};time=0;over=false;placing=null;atkMode=false;msgT={};
   const ai=['bunker','mutant'].find(f=>f!==cfg.fac);
   sides=[{id:0,fac:cfg.fac,human:true,money:2600,lvl:1,bq:null,uq:{bar:[],fac:[],air:[]},upg:null,tech:{},res:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}},
          {id:1,fac:ai,ai:true,money:2000,lvl:1,bq:null,uq:{bar:[],fac:[],air:[]},upg:null,tech:{},res:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}}];
@@ -160,12 +180,13 @@ const HELP=`<h2>So wird gespielt</h2><ul>
 <li><b>Truppen:</b> Im Reiter „Truppen“ ausbilden. Schwere Einheiten brauchen den Ausbau der Zentrale (Zentrale anklicken → Ausbau).</li>
 <li><b>Steuern (Maus):</b> Linksklick wählt aus, Rahmen ziehen wählt mehrere, Doppelklick wählt alle gleichen. Rechtsklick bewegt bzw. greift an. Mausrad zoomt, Bildschirmrand/Pfeiltasten/Mitteltaste scrollen.</li>
 <li><b>Tablet:</b> Antippen wählt aus, danach auf den Boden oder einen Feind tippen. Mit einem Finger ziehen scrollt, mit ⬚ ziehst du einen Auswahlrahmen, zwei Finger zoomen.</li>
-<li><b>Tasten:</b> <kbd>A</kbd> Angriffsbewegung, <kbd>S</kbd> Stopp, <kbd>H</kbd> zur Basis, <kbd>Strg</kbd>+<kbd>1–9</kbd> Gruppe speichern, <kbd>1–9</kbd> Gruppe wählen, <kbd>Esc</kbd> Pause.</li>
+<li><b>Tasten:</b> <kbd>A</kbd> Angriffsbewegung, <kbd>S</kbd> Stopp, <kbd>H</kbd> zur Basis, <kbd>Q</kbd> alle Kampftruppen wählen, <kbd>Leertaste</kbd> zum letzten Angriff springen, <kbd>Strg</kbd>+<kbd>1–9</kbd> Gruppe speichern, <kbd>1–9</kbd> Gruppe wählen, <kbd>Esc</kbd> Pause.</li>
 <li><b>Tech-Bunker</b> ☢: Schick Fußsoldaten hin – darin wartet eine mächtige Spezialeinheit.</li>
 <li><b>Technologiebaum:</b> Gebäude schalten weitere frei (🔒 zeigt, was fehlt). Beispiel: Panzerwerk + Kraftwerk → Radar → Raketenturm, Flugfeld; Radar + Werkstatt → Labor → Superwaffe.</li>
 <li><b>Strom:</b> Kraftwerke liefern Strom. Bei Strommangel (roter Balken) läuft alles halb so schnell.</li>
 <li><b>Mauern:</b> Mauer wählen, dann beliebig viele Stücke setzen – Rechtsklick beendet.</li>
 <li><b>Ausbauen:</b> Eigenes Gebäude anklicken → „Auf Stufe 2/3“. Kaserne und Panzerwerk erforschen außerdem Waffen und Panzerung für deine Truppen (wirkt auch auf alle vorhandenen).</li>
+<li><b>Hilfe im Spiel:</b> Fahre mit der Maus über einen Bau-Knopf – unten steht, was das Gebäude oder die Einheit kann.</li>
 <li><b>Erfahrung:</b> Einheiten mit Abschüssen bekommen Sterne und werden stärker.</li>
 <li><b>Waffen:</b> Gewehre gegen Fußvolk, Raketen und Kanonen gegen Fahrzeuge, Bestien und Gebäude.</li></ul>`;
 function showHelp(back){const p=$('panel');$('overlay').classList.remove('hidden');p.innerHTML=HELP+`<button class="sbtn" id="hBack">Zurück</button>`;$('hBack').onclick=()=>{if(back)back();else $('overlay').classList.add('hidden')}}
@@ -176,7 +197,7 @@ function endGame(win,why){if(over)return;over=true;const S=sides[0],E=sides[1];c
   $('eAgain').onclick=()=>{$('overlay').classList.add('hidden');newGame()};$('eMenu').onclick=()=>{$('overlay').classList.add('hidden');$('start').classList.remove('hidden');paused=true};$('eLook').onclick=()=>{$('overlay').classList.add('hidden');cfg.reveal=true}}
 let last=performance.now(),acc=0;
 function loop(now){const rdt=Math.min(.05,(now-last)/1000);last=now;
-  if(!paused&&sides.length){const dt=rdt*speed;time+=dt;step(dt)}
+  if(!paused&&sides.length){const dt=rdt*speed;time+=dt;step(dt);hints(dt)}
   if(sides.length){// Kamera
     const sp=600*rdt/zoom;if(keys.ArrowLeft)camX-=sp;if(keys.ArrowRight)camX+=sp;if(keys.ArrowUp)camY-=sp;if(keys.ArrowDown)camY+=sp;
     if(mouseIn&&!drag&&!paused&&matchMedia('(pointer:fine)').matches){const m=14;if(mouse.x<m)camX-=sp;if(mouse.x>CW-m)camX+=sp;if(mouse.y<m)camY-=sp;if(mouse.y>CH-m)camY+=sp}
