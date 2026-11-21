@@ -141,6 +141,10 @@ const FAC={
 };
 const DIFF={easy:{inc:.5,first:480,wave:3,grow:1,mix:0,maxw:10,think:1.5,gap:150,name:'Leicht'},normal:{inc:.75,first:340,wave:4,grow:1,mix:.08,maxw:16,think:1.15,gap:110,name:'Normal'},hard:{inc:.95,first:240,wave:5,grow:2,mix:.18,maxw:22,think:1,gap:80,name:'Schwer'},brutal:{inc:1.25,first:170,wave:6,grow:2,mix:.28,maxw:28,think:.9,gap:60,name:'Brutal'}};
 const COL=['#e6a92a','#c8352c'];
+const BUPG=['ref','der','bar','fac','tow'];const bupCost=b=>Math.round(B[b.type].cost*.6*b.lvl),bupTime=b=>8+b.lvl*6;
+const RES={infW:{at:'bar',n:'Waffen Fußtruppen',ic:'🔫',c:[350,700],t:[18,26]},infA:{at:'bar',n:'Panzerung Fußtruppen',ic:'🛡',c:[300,600],t:[16,24]},vehW:{at:'fac',n:'Waffen Fahrzeuge & Bestien',ic:'💥',c:[500,1000],t:[22,30]},vehA:{at:'fac',n:'Panzerung Fahrzeuge & Bestien',ic:'🛡',c:[450,900],t:[20,28]}};
+const ROM=['','I','II'];
+const isInf=u=>u.s.arm==='inf';const techW=u=>u.k==='u'?1+.15*(sides[u.side].tech[isInf(u)?'infW':'vehW']||0):1,techA=u=>u.k==='u'?1+.15*(sides[u.side].tech[isInf(u)?'infA':'vehA']||0):1;
 function stat(side,type){return Object.assign({},U[type],FAC[sides[side].fac].mod[type]||{})}
 
 /* ======================= Zustand ======================= */
@@ -234,7 +238,7 @@ function nearestFree(x,y,R){for(let r=0;r<=R;r++)for(let dy=-r;dy<=r;dy++)for(le
 /* ======================= Objekte ======================= */
 function addUnit(side,type,x,y){const s=stat(side,type);const u={id:nextId++,k:'u',type,side,x,y,hp:s.hp,max:s.hp,s,dir:sr()*6,tdir:0,path:null,pi:0,ord:null,tgt:null,cd:sr(),vet:0,kills:0,acq:0,anim:rnd()*6,gx:x,gy:y,load:0,st:'idle',stT:0,repath:0};
   ents.push(u);if(side===0)sides[0].stats.made++;return u}
-function addBld(side,type,tx,ty){const d=B[type];const b={id:nextId++,k:'b',type,side,tx,ty,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:d.hp,max:d.hp,cd:0,tgt:null,anim:0,born:time,rally:null,oil:type==='der'?9000:0,opened:false,tdir:1.5};
+function addBld(side,type,tx,ty){const d=B[type];const b={id:nextId++,k:'b',type,side,tx,ty,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:d.hp,max:d.hp,cd:0,tgt:null,anim:0,born:time,rally:null,oil:type==='der'?9000:0,opened:false,tdir:1.5,lvl:1,spent:d.cost||0,up:null};
   if(side>=0&&b.type!=='tech'){const lvl=sides[side].lvl;if(lvl>1&&type==='hq'){b.max=b.hp=d.hp*1.3}if(sides[side].human){b.max*=1.15;b.hp=b.max}}
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++)occ[y*MW+x]=b.id;
   // Einheiten aus dem Weg schieben
@@ -256,7 +260,7 @@ function reqPath(u,gx,gy){u.pgx=gx;u.pgy=gy;if(!pathQ.includes(u))pathQ.push(u)}
 function processPaths(){let n=0;while(pathQ.length&&n++<20){const u=pathQ.shift();if(u.dead)continue;u.path=findPath((u.x/T)|0,(u.y/T)|0,u.pgx,u.pgy);u.pi=0}}
 
 /* ======================= Kampf ======================= */
-function hurt(t,dmg,wpn,src){if(!alive(t)||t.type==='tech')return;const arm=t.k==='b'?'bld':t.s.arm;let d=dmg*ARM[wpn][arm]*(src&&src.vet?1+src.vet*.2:1);
+function hurt(t,dmg,wpn,src){if(!alive(t)||t.type==='tech')return;const arm=t.k==='b'?'bld':t.s.arm;let d=dmg*ARM[wpn][arm]*(src&&src.vet?1+src.vet*.2:1)*(src&&src.side>=0?techW(src):1)*(src&&src.k==='b'&&src.lvl>1?1+(src.lvl-1)*.4:1)/(t.k==='u'?techA(t):1);
   t.hp-=d;t.lastHit=time;if(t.k==='b'&&t.side===0&&src&&src.side===1)warnAttack(t);
   if(t.k==='b'&&t.side>=0)sides[t.side].lastAtk={t:time,x:t.x,y:t.y,src};
   if(t.k==='u'&&src&&!src.dead&&!t.tgt&&t.ord!=='move'&&t.s.dmg&&src.side!==t.side)t.tgt=src;
@@ -325,18 +329,19 @@ function tanker(u,dt){const S=sides[u.side];u.stT-=dt;
     for(const d of ds){const n=units(u.side,'oil').filter(o=>o.der===d&&o!==u).length;const dd=dist(u.x,u.y,d.x,d.y)+n*400;if(n<3&&dd<bd){bd=dd;best=d}}
     u.der=best;if(best){if(u.load>=200){u.st='toRef'}else{u.st='toDer';const t=dock(best);u.gx=t.x*T+16;u.gy=t.y*T+16;reqPath(u,t.x,t.y)}}else if(u.load>0){u.st='toRef'}else{u.st='wait';u.stT=2}}
   if(u.st==='wait'&&u.stT<=0)u.st='idle';
-  if(u.st==='toDer'){if(!u.der){u.st='idle';return}if(edgeDist(u,u.der)<T*.8){u.st='load';u.stT=2.5;u.path=null}else if(!u.path&&!pathQ.includes(u)){const t=dock(u.der);reqPath(u,t.x,t.y)}}
+  if(u.st==='toDer'){if(!u.der){u.st='idle';return}if(edgeDist(u,u.der)<T*.8){u.st='load';u.stT=2.5/(1+(u.der.lvl-1)*.5);u.path=null}else if(!u.path&&!pathQ.includes(u)){const t=dock(u.der);reqPath(u,t.x,t.y)}}
   if(u.st==='load'&&u.stT<=0){const amt=Math.min(200,u.der?u.der.oil:0);if(u.der)u.der.oil-=amt;u.load=amt;u.st='toRef'}
   if(u.st==='toRef'){const rs=own(u.side,'ref');if(!rs.length){u.st='wait';u.stT=3;return}let r=rs.reduce((a,b)=>dist(u.x,u.y,a.x,a.y)<dist(u.x,u.y,b.x,b.y)?a:b);u.ref=r;
     if(edgeDist(u,r)<T*.8){u.st='unload';u.stT=1.5;u.path=null}else if(!u.path&&!pathQ.includes(u)){const t=dock(r);reqPath(u,t.x,t.y)}}
-  if(u.st==='unload'&&u.stT<=0){if(alive(u.ref)){const inc=u.load*(u.side===1&&sides[1].ai?DIFF[cfg.diff].inc:1);S.money+=Math.round(inc);S.stats.oil+=Math.round(inc);if(u.side===0&&onScreen(u.x,u.y))floatTxt(u.ref.x,u.ref.y-30,'+'+Math.round(inc),'#ffcf5a')}u.load=0;u.st='idle'}}
+  if(u.st==='unload'&&u.stT<=0){if(alive(u.ref)){const inc=u.load*(u.side===1&&sides[1].ai?DIFF[cfg.diff].inc:1)*(1+(u.ref.lvl-1)*.2);S.money+=Math.round(inc);S.stats.oil+=Math.round(inc);if(u.side===0&&onScreen(u.x,u.y))floatTxt(u.ref.x,u.ref.y-30,'+'+Math.round(inc),'#ffcf5a')}u.load=0;u.st='idle'}}
 function dock(b){let best=null,bd=1e9;for(let y=b.ty-1;y<=b.ty+b.h;y++)for(let x=b.tx-1;x<=b.tx+b.w;x++){if(blocked(x,y))continue;const d=Math.abs(y-(b.ty+b.h))*0.5+Math.abs(x-(b.tx+b.w/2));if(d<bd){bd=d;best={x,y}}}return best||{x:b.tx,y:b.ty+b.h}}
 function openBunker(b,u){b.opened=true;const S=sides[u.side];const n=cfg.size>70?2:1;
   for(let i=0;i<n;i++){const f=nearestFree(b.tx+1,b.ty+b.h+1,5);if(f){const e=addUnit(u.side,'elite',f.x*T+16,f.y*T+16);e.vet=1}}
   for(const o of ents)if(o.bunker===b)o.bunker=null;
   boom(b.x,b.y,14);if(u.side===0)say(`Tech-Bunker geöffnet – ${FAC[S.fac].u.elite} erbeutet!`);else if(isVisTo(0,b))say('Der Feind hat einen Tech-Bunker geplündert!','bad')}
 function updBld(b,dt){b.anim+=dt;const d=B[b.type];
-  if(d.wpn){b.cd-=dt;if(b.tgt&&(b.tgt.dead||edgeDist(b,b.tgt)>d.rng*T||!isVisTo(b.side,b.tgt)))b.tgt=null;if(!b.tgt&&(b.acqT=(b.acqT||0)-dt)<=0){b.acqT=.4;b.tgt=acquire(b,d.rng)}
+  if(b.up){b.up.t+=dt;if(b.up.t>=b.up.total){b.up=null;b.lvl++;const add=b.max*.3;b.max+=add;b.hp+=add;if(b.side===0){say(`${FAC[sides[0].fac].b[b.type]} auf Stufe ${b.lvl} ausgebaut`);floatTxt(b.x,b.y-30,'Stufe '+b.lvl,'#7aff6a')}}}
+  if(d.wpn){const rg=d.rng+(b.lvl-1)*.75;b.cd-=dt;if(b.tgt&&(b.tgt.dead||edgeDist(b,b.tgt)>rg*T||!isVisTo(b.side,b.tgt)))b.tgt=null;if(!b.tgt&&(b.acqT=(b.acqT||0)-dt)<=0){b.acqT=.4;b.tgt=acquire(b,rg)}
     if(b.tgt){const a=Math.atan2(b.tgt.y-b.y,b.tgt.x-b.x);b.tdir=turn(b.tdir,a,dt*5);if(b.cd<=0&&Math.abs(angDiff(b.tdir,a))<.3){fire(b,b.tgt);b.cd=d.cd}}}
   if(b.hp<b.max*.5&&rnd()<dt*6)parts.push({x:b.x+(rnd()-.5)*b.w*T*.6,y:b.y+(rnd()-.5)*b.h*T*.6,vx:4,vy:-18,l:1.6,m:1.6,t:b.hp<b.max*.25&&rnd()<.5?'fire':'smoke',r:5});
   if((b.type==='ref'||b.type==='hq')&&rnd()<dt*2.5)parts.push({x:b.tx*T+(b.type==='ref'?20:b.w*T-14),y:b.ty*T+6,vx:6,vy:-14,l:2.2,m:2.2,t:'smoke',r:4})}
@@ -348,9 +353,10 @@ function startBuild(S,type){if(S.bq||!reqOK(S,type))return false;const c=B[type]
 function queueUnit(S,type){if(!reqOK(S,type))return false;const st=stat(S.id,type);if(S.money<st.cost){if(S.id===0)say('Zu wenig Öl-Dollar!','bad');return false}
   const q=S.uq[st.from];if(q.length>=10)return false;S.money-=st.cost;q.push({type,t:0,total:st.time});return true}
 function updProd(S,dt){if(S.bq&&!S.bq.done){S.bq.t+=dt;if(S.bq.t>=S.bq.total){S.bq.done=true;if(S.id===0){say('Gebäude bereit – jetzt platzieren');tab='b';buildUI()}}}
-  for(const pf of['bar','fac']){const q=S.uq[pf],ps=own(S.id,pf);if(!q.length||!ps.length)continue;q[0].t+=dt*(1+(ps.length-1)*.5);
+  for(const pf of['bar','fac']){const q=S.uq[pf],ps=own(S.id,pf);if(!q.length||!ps.length)continue;q[0].t+=dt*(1+(ps.length-1)*.5)*(1+(Math.max(...ps.map(p=>p.lvl))-1)*.35);
     if(q[0].t>=q[0].total){const it=q.shift();const p=ps[(S.rot=(S.rot||0)+1)%ps.length];const f=nearestFree(p.tx+(p.w>>1),p.ty+p.h,6)||{x:p.tx,y:p.ty+p.h};
       const u=addUnit(S.id,it.type,f.x*T+16,f.y*T+16);if(p.rally)cmdMove([u],p.rally.x,p.rally.y,it.type==='oil'?'move':'amove');if(S.id===0)say(`${FAC[S.fac].u[it.type]} bereit`,'',true)}}
+  if(S.res){if(!own(S.id,RES[S.res.k].at).length){S.money+=S.res.cost;S.res=null}else{S.res.t+=dt;if(S.res.t>=S.res.total){const k=S.res.k;S.tech[k]=(S.tech[k]||0)+1;S.res=null;if(S.id===0)say(`Forschung fertig: ${RES[k].n} ${ROM[S.tech[k]]}`)}}}
   if(S.upg){S.upg.t+=dt;if(S.upg.t>=S.upg.total){S.upg=null;S.lvl=2;for(const h of own(S.id,'hq')){h.max*=1.3;h.hp*=1.3}if(S.id===0)say('Zentrale ausgebaut – schwere Einheiten verfügbar!')}}}
 function canPlace(S,type,tx,ty){const d=B[type];if(tx<1||ty<1||tx+d.w>MW-1||ty+d.h>MH-1)return false;
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++){const t=tiles[y*MW+x];if(t===1||occ[y*MW+x])return false;if(type==='der'?t!==2:t===2)return false}
@@ -373,6 +379,8 @@ function updAI(S,dt){const D=DIFF[cfg.diff];if(S.human)return;
     S.want=want;if(want)startBuild(S,want)}
   if(S.bq&&S.bq.done){const spot=aiSpot(S,S.bq.type,hq);if(spot)place(S,spot.x,spot.y);else if(S.bq.type==='der'){S.money+=B.der.cost;S.bq=null}}
   if(S.lvl<2&&!S.upg&&has('fac')&&(S.money>1300||time>420&&S.money>=1200)){S.money-=1200;S.upg={t:0,total:30}}
+  if((cfg.diff==='hard'||cfg.diff==='brutal')&&time>360&&S.money>1600&&!S.res){const k=['infW','vehW','infA','vehA'].find(k=>(S.tech[k]||0)<(cfg.diff==='brutal'?2:1)&&own(S.id,RES[k].at).length);if(k)startRes(S,k)}
+  if(time>300&&S.money>2000){const b=own(S.id).find(b=>BUPG.includes(b.type)&&!b.up&&b.lvl<(cfg.diff==='easy'?1:cfg.diff==='normal'?2:3)&&(b.type==='ref'||b.type==='tow'||b.type==='fac'));if(b){const c=bupCost(b);S.money-=c;b.spent+=c;b.up={t:0,total:bupTime(b)}}}
   const armyN=units(S.id).filter(u=>u.type!=='oil').length;
   const saving=(S.want&&!S.bq&&S.money<B[S.want].cost)||(S.lvl<2&&has('fac')&&!S.upg&&time>300);
   const reserve=saving&&armyN>=5?99999:0;
@@ -565,6 +573,9 @@ function drawBld(b){const c=DC,col=b.side>=0?COL[b.side]:'#888',x0=b.tx*T,y0=b.t
     case'tow':c.fillStyle=wall2;c.fillRect(2,4,w-4,h-4);c.fillStyle=wall;c.fillRect(4,6,w-8,h-8);c.save();c.translate(w/2,h/2);c.rotate(b.tdir);c.fillStyle=mut?'#4a3018':'#3e3e36';c.beginPath();c.arc(0,0,8,0,7);c.fill();c.fillStyle='#1a1a16';c.fillRect(4,-3,14,2);c.fillRect(4,1,14,2);c.restore();c.fillStyle=col;c.fillRect(2,h-4,w-4,3);if(mut)spikes(2,4,w-4);break;
     case'tech':c.fillStyle='#4a4e52';c.fillRect(2,6,w-4,h-8);c.fillStyle='#2e3236';c.fillRect(8,12,w-16,h-20);c.fillStyle=b.opened?'#1a1a1a':'#e6c32a';for(let i=0;i<4;i++){c.save();c.translate(w/2,h/2+2);c.rotate(i*Math.PI/2+.4);c.fillRect(-2,-14,4,8);c.restore()}
       c.fillStyle=b.opened?'#333':(Math.sin(a*4)>0?'#7ae8ff':'#2a6a7a');c.beginPath();c.arc(w/2,h/2+2,4,0,7);c.fill();c.fillStyle='#ddd';c.font='bold 8px sans-serif';c.textAlign='center';c.fillText(b.opened?'LEER':'☢',w/2,10);break}
+  if(b.lvl>1){for(let i=0;i<b.lvl-1;i++){c.fillStyle='#1a1208';c.beginPath();c.moveTo(4+i*11,h-3);c.lineTo(9+i*11,h-10);c.lineTo(14+i*11,h-3);c.lineTo(14+i*11,h-6);c.lineTo(9+i*11,h-13);c.lineTo(4+i*11,h-6);c.fill();
+    c.fillStyle='#ffcf5a';c.beginPath();c.moveTo(5+i*11,h-4);c.lineTo(9+i*11,h-9);c.lineTo(13+i*11,h-4);c.lineTo(13+i*11,h-6);c.lineTo(9+i*11,h-11);c.lineTo(5+i*11,h-6);c.fill()}}
+  if(b.up){c.strokeStyle='#ffcf5a';c.lineWidth=2;c.setLineDash([4,4]);c.lineDashOffset=-a*20;c.strokeRect(2,2,w-4,h-4);c.setLineDash([])}
   c.restore()}
 function drawMini(){const W=mini.width,s=W/MW;mctx.imageSmoothingEnabled=false;mctx.drawImage(miniBase,0,0,W,W);
   for(const e of ents){if(e.dead)continue;if(e.side===1&&!isVisTo(0,e))continue;mctx.fillStyle=e.side<0?(e.opened?'#666':'#7ae8ff'):COL[e.side];
@@ -606,15 +617,20 @@ function updUI(force){const S=sides[0];$('money').textContent=Math.floor(S.money
     b.classList.toggle('ready',ready);if(ready){if(!rd){rd=document.createElement('div');rd.className='rd';rd.textContent='PLATZIEREN';b.appendChild(rd)}}else if(rd)rd.remove();
     if(busy){if(!sh){sh=document.createElement('div');sh.className='shade';b.appendChild(sh)}}else if(sh)sh.remove()}
   if(force||(uiT+=1)%6===0)infoUI()}
+function bupInfo(t){return{ref:'+20 % Öl je Stufe',der:'Laster laden schneller',bar:'bildet 35 % schneller aus',fac:'baut 35 % schneller',tow:'mehr Schaden und Reichweite'}[t]+', +30 % Haltbarkeit'}
 function setInfo(h){const box=$('info');if(box._h!==h){box._h=h;box.innerHTML=h}}
-function sellBld(e){const S=sides[0];if(!e||e.dead||e.side!==0||e.k!=='b'||e.type==='hq')return;const v=Math.floor(B[e.type].cost*.5*e.hp/e.max);
+function sellBld(e){const S=sides[0];if(!e||e.dead||e.side!==0||e.k!=='b'||e.type==='hq')return;const v=Math.floor(e.spent*.5*e.hp/e.max);
   for(let y=e.ty;y<e.ty+e.h;y++)for(let x=e.tx;x<e.tx+e.w;x++)if(occ[y*MW+x]===e.id)occ[y*MW+x]=0;
   e.dead=true;e.hp=0;S.money+=v;for(const o of ents)if(o.der===e)o.der=null;
   for(let i=0;i<e.w*e.h*3;i++)parts.push({x:e.x+(rnd()-.5)*e.w*T,y:e.y+(rnd()-.5)*e.h*T,vx:(rnd()-.5)*10,vy:-8-rnd()*10,l:1.2+rnd(),m:2,t:'smoke',r:6});
   decalRubble(e);sfx('place',e.x,e.y);floatTxt(e.x,e.y-20,'+'+v,'#ffcf5a');sel=sel.filter(o=>o!==e);say(`${FAC[S.fac].b[e.type]} verkauft (+${v} $)`,'',true);infoUI();updUI(true)}
+function upgradeBld(e){const S=sides[0];if(!e||e.dead||e.side!==0||!BUPG.includes(e.type)||e.up||e.lvl>=3)return;const c=bupCost(e);if(S.money<c){say('Zu wenig Öl-Dollar!','bad',true);return}
+  S.money-=c;e.spent+=c;e.up={t:0,total:bupTime(e)};say(`Ausbau ${FAC[S.fac].b[e.type]} gestartet`,'',true);infoUI()}
+function startRes(S,k){const r=RES[k],lv=S.tech[k]||0;if(S.res||lv>=2||!own(S.id,r.at).length)return false;const c=r.c[lv];if(S.money<c){if(S.id===0)say('Zu wenig Öl-Dollar!','bad',true);return false}
+  S.money-=c;S.res={k,t:0,total:r.t[lv],cost:c};if(S.id===0)say(`Forschung gestartet: ${r.n} ${ROM[lv+1]}`,'',true);return true}
 function upgradeHQ(){const S=sides[0];if(S.money>=1200&&!S.upg&&S.lvl<2){S.money-=1200;S.upg={t:0,total:30};say('Ausbau der Zentrale gestartet','',true);infoUI()}}
 $('info').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b||b.disabled)return;ev.preventDefault();sfx('click');
-  if(b.id==='iSell'){const e=sel.find(x=>!x.dead&&x.id===+b.dataset.id);sellBld(e)}else if(b.id==='iUp')upgradeHQ()});
+  if(b.id==='iSell'){const e=sel.find(x=>!x.dead&&x.id===+b.dataset.id);sellBld(e)}else if(b.id==='iUp')upgradeHQ();else if(b.id==='iBup'){upgradeBld(sel.find(x=>!x.dead&&x.id===+b.dataset.id))}else if(b.dataset.res){startRes(sides[0],b.dataset.res);infoUI()}});
 function infoUI(){const S=sides[0],box=$('info');const s=sel.filter(e=>!e.dead);
   if(!s.length){setInfo(`<b>${FAC[S.fac].name}</b><br>Einheiten: ${units(0).length} · Gebäude: ${own(0).length}<br><span style="color:#b9a27e">Gegner: ${DIFF[cfg.diff].name}</span>`);return}
   if(s.length===1){const e=s[0];const nm=e.k==='b'?(e.side>=0?FAC[sides[e.side].fac].b[e.type]:'Tech-Bunker'):FAC[sides[e.side].fac].u[e.type];
@@ -622,8 +638,17 @@ function infoUI(){const S=sides[0],box=$('info');const s=sel.filter(e=>!e.dead);
     if(e.k==='u'&&e.type==='oil')h+=`<br>Ladung: ${e.load} Öl`;if(e.k==='b'&&e.type==='der')h+=`<br>Ölvorrat: ${Math.max(0,e.oil)}`;
     if(e.k==='u'&&e.kills)h+=`<br>Abschüsse: ${e.kills}`;
     if(e.side===0&&e.type==='hq')h+=S.lvl>1?'<br>✔ Ausgebaut':S.upg?`<br>Ausbau läuft … ${Math.floor(S.upg.t/S.upg.total*100)} %`:`<button class="sbtn" id="iUp" ${S.money<1200?'disabled':''}>⬆ Ausbau (1200 $)</button>`;
-    if(e.side===0&&(e.type==='bar'||e.type==='fac'))h+='<br><span style="color:#b9a27e">Rechtsklick auf die Karte setzt den Sammelpunkt</span>';
-    if(e.side===0&&e.k==='b'&&e.type!=='hq')h+=`<button class="sbtn" id="iSell" data-id="${e.id}">♻ Verkaufen (+${Math.floor(B[e.type].cost*.5*e.hp/e.max)} $)</button>`;
+    if(e.k==='b'&&BUPG.includes(e.type))h+=`<br><span style="color:#ffcf5a">Stufe ${e.lvl}</span> · <span style="color:#b9a27e">${bupInfo(e.type)}</span>`;
+    if(e.k==='u'){const S2=sides[e.side],w=S2.tech[isInf(e)?'infW':'vehW']||0,ar=S2.tech[isInf(e)?'infA':'vehA']||0;if(w||ar)h+=`<br><span style="color:#7aff6a">${w?'Waffen '+ROM[w]:''}${w&&ar?' · ':''}${ar?'Panzerung '+ROM[ar]:''}</span>`}
+    if(e.side===0&&e.k==='b'&&BUPG.includes(e.type)){if(e.up)h+=`<br>Ausbau läuft … ${Math.floor(e.up.t/e.up.total*100)} %`;else if(e.lvl<3)h+=`<button class="sbtn" id="iBup" data-id="${e.id}" ${S.money<bupCost(e)?'disabled':''}>⬆ Auf Stufe ${e.lvl+1} (${bupCost(e)} $)</button>`;else h+='<br>✔ Höchste Stufe'}
+    if(e.side===0&&(e.type==='bar'||e.type==='fac')){h+='<div style="margin-top:6px;color:#ffdf9a;font-weight:800">Forschung</div>';
+      for(const k in RES){const r=RES[k];if(r.at!==e.type)continue;const lv=S.tech[k]||0;
+        if(S.res&&S.res.k===k)h+=`<div>${r.ic} ${r.n} ${ROM[lv+1]} … ${Math.floor(S.res.t/S.res.total*100)} %</div>`;
+        else if(lv>=2)h+=`<div>${r.ic} ${r.n} ✔ II</div>`;
+        else h+=`<button class="sbtn" data-res="${k}" ${S.res||S.money<r.c[lv]?'disabled':''}>${r.ic} ${r.n} ${ROM[lv+1]} (${r.c[lv]} $)</button>`}
+      if(S.res&&RES[S.res.k].at!==e.type)h+='<div style="color:#b9a27e">Es läuft schon eine Forschung</div>';
+      h+='<span style="color:#b9a27e">Rechtsklick auf die Karte setzt den Sammelpunkt</span>'}
+    if(e.side===0&&e.k==='b'&&e.type!=='hq')h+=`<button class="sbtn" id="iSell" data-id="${e.id}">♻ Verkaufen (+${Math.floor(e.spent*.5*e.hp/e.max)} $)</button>`;
     setInfo(h);return}
   const cnt={};for(const e of s)cnt[e.type]=(cnt[e.type]||0)+1;setInfo(`<b>${s.length} ausgewählt</b><br>`+Object.entries(cnt).map(([t,n])=>`${n}× ${FAC[S.fac].u[t]||t}`).join('<br>'))}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));tab=t.dataset.t;buildUI()});
@@ -691,8 +716,8 @@ $('tAtk').onclick=()=>{atkMode=!atkMode;updTop()};$('tStop').onclick=stopSel;$('
 /* ======================= Ablauf ======================= */
 function newGame(){MW=MH=cfg.size;ents=[];nextId=1;projs=[];tracers=[];parts=[];pathQ=[];sel=[];marks=[];groups={};time=0;over=false;placing=null;atkMode=false;msgT={};
   const ai=['bunker','mutant'].find(f=>f!==cfg.fac);
-  sides=[{id:0,fac:cfg.fac,human:true,money:2600,lvl:1,bq:null,uq:{bar:[],fac:[]},upg:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}},
-         {id:1,fac:ai,ai:true,money:2000,lvl:1,bq:null,uq:{bar:[],fac:[]},upg:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}}];
+  sides=[{id:0,fac:cfg.fac,human:true,money:2600,lvl:1,bq:null,uq:{bar:[],fac:[]},upg:null,tech:{},res:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}},
+         {id:1,fac:ai,ai:true,money:2000,lvl:1,bq:null,uq:{bar:[],fac:[]},upg:null,tech:{},res:null,stats:{kills:0,lost:0,blost:0,built:0,oil:0,made:0}}];
   if(cfg.demo)sides[0].human=false;
   const m=genMap();renderTerrain();iconCacheClear();
   for(const[s,p]of[[0,m.sA],[1,m.sB]]){const hq=addBld(s,'hq',p.x-1,p.y-1);hq.born=-9;const ut=['inf','inf','inf','rkt'];ut.forEach((t,i)=>{const f=nearestFree(p.x+2+i%2,p.y+3+(i>>1),4);if(f)addUnit(s,t,f.x*T+16,f.y*T+16)})}
@@ -717,6 +742,7 @@ const HELP=`<h2>So wird gespielt</h2><ul>
 <li><b>Tablet:</b> Antippen wählt aus, danach auf den Boden oder einen Feind tippen. Mit einem Finger ziehen scrollt, mit ⬚ ziehst du einen Auswahlrahmen, zwei Finger zoomen.</li>
 <li><b>Tasten:</b> <kbd>A</kbd> Angriffsbewegung, <kbd>S</kbd> Stopp, <kbd>H</kbd> zur Basis, <kbd>Strg</kbd>+<kbd>1–9</kbd> Gruppe speichern, <kbd>1–9</kbd> Gruppe wählen, <kbd>Esc</kbd> Pause.</li>
 <li><b>Tech-Bunker</b> ☢: Schick Fußsoldaten hin – darin wartet eine mächtige Spezialeinheit.</li>
+<li><b>Ausbauen:</b> Eigenes Gebäude anklicken → „Auf Stufe 2/3“. Kaserne und Panzerwerk erforschen außerdem Waffen und Panzerung für deine Truppen (wirkt auch auf alle vorhandenen).</li>
 <li><b>Erfahrung:</b> Einheiten mit Abschüssen bekommen Sterne und werden stärker.</li>
 <li><b>Waffen:</b> Gewehre gegen Fußvolk, Raketen und Kanonen gegen Fahrzeuge, Bestien und Gebäude.</li></ul>`;
 function showHelp(back){const p=$('panel');$('overlay').classList.remove('hidden');p.innerHTML=HELP+`<button class="sbtn" id="hBack">Zurück</button>`;$('hBack').onclick=()=>{if(back)back();else $('overlay').classList.add('hidden')}}
