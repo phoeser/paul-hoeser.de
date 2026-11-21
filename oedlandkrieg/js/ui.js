@@ -1,7 +1,7 @@
 "use strict";
 /* ======================= Seitenleiste ======================= */
 let tab='b',uiT=0,hoverT=null,hintT=12;
-const DESC={pow:'Liefert 100 Strom. Ohne genug Strom läuft alles halb so schnell.',ref:'Hier liefern die Laster das Öl ab. Bringt einen Laster mit.',der:'Fördert Öl. Nur auf schwarzen Ölfeldern.',bar:'Bildet Fußtruppen aus und erforscht ihre Ausrüstung.',wall:'Hält Bodentruppen auf. Mehrere nacheinander setzen, Rechtsklick beendet.',tow:'Günstiger Turm gegen Fußtruppen und Flieger.',fac:'Baut Fahrzeuge bzw. Bestien und erforscht ihre Ausrüstung.',sil:'+10 % Öl-Ertrag (bis zu 3 Stück).',scr:'Macht aus Schrott Geld. Nur auf Schrottfeldern.',rep:'Repariert Fahrzeuge und Gebäude in der Nähe.',ctow:'Schwerer Turm gegen Fahrzeuge. Trifft keine Flieger.',rad:'Zeigt alle feindlichen Einheiten auf der Minikarte.',rtow:'Große Reichweite, stark gegen Flieger und Fahrzeuge.',air:'Baut Lufteinheiten.',lab:'Schaltet die stärkste Bodeneinheit und die Superwaffe frei.',sup:'Superwaffe. Lädt 5 Minuten, dann Ziel wählen.',
+const DESC={pow:'Liefert 100 Strom. Ohne genug Strom läuft alles halb so schnell.',ref:'Hier liefern die Laster das Öl ab. Bringt einen Laster mit.',der:'Fördert Öl. Nur auf schwarzen Ölfeldern.',bar:'Bildet Fußtruppen aus und erforscht ihre Ausrüstung.',wall:'Hält Bodentruppen auf. Ein Kauf reicht für bis zu 3 Stücke (je 40 $), dann ist die Mauer verbraucht.',tow:'Günstiger Turm gegen Fußtruppen und Flieger.',fac:'Baut Fahrzeuge bzw. Bestien und erforscht ihre Ausrüstung.',sil:'+10 % Öl-Ertrag (bis zu 3 Stück).',scr:'Macht aus Schrott Geld. Nur auf Schrottfeldern.',rep:'Repariert Fahrzeuge und Gebäude in der Nähe.',ctow:'Schwerer Turm gegen Fahrzeuge. Trifft keine Flieger.',rad:'Zeigt alle feindlichen Einheiten auf der Minikarte.',rtow:'Große Reichweite, stark gegen Flieger und Fahrzeuge.',air:'Baut Lufteinheiten.',lab:'Schaltet die stärkste Bodeneinheit und die Superwaffe frei.',sup:'Superwaffe. Lädt 5 Minuten, dann Ziel wählen.',
  inf:'Billig. Gut gegen Fußtruppen, schwach gegen Panzer.',rkt:'Stark gegen Fahrzeuge, Gebäude und Flieger.',scout:'Sehr schnell, sieht weit. Zum Erkunden.',flame:'Kurze Reichweite, verheerend gegen Fußtruppen.',med:'Heilt Verwundete in der Nähe. Kämpft nicht.',fast:'Schnell. Gut gegen Fußtruppen.',oil:'Holt Öl vom Ölfeld zur Raffinerie.',heavy:'Starker Allrounder gegen Fahrzeuge und Gebäude.',art:'Riesige Reichweite, Flächenschaden. Wehrlos im Nahkampf.',mbt:'Stärkste Bodeneinheit.',heli:'Fliegt über alles hinweg. Nur Raketen, MG und Laser treffen.'};
 function descHTML(o){const S=sides[me],t=o.t,d=o.isB?B[t]:stat(me,t),nm=o.isB?FAC[S.fac].b[t]:FAC[S.fac].u[t];let h=`<b>${nm}</b> · <span style="color:#ffcf5a">${d.cost} $</span><br>${DESC[t]||''}`;
   if(o.isB){if(d.pw>0)h+=`<br><span style="color:#b9a27e">Verbraucht ${d.pw} Strom</span>`}else h+=`<br><span style="color:#b9a27e">Leben ${d.hp}${d.dmg?' · Schaden '+d.dmg+' · Reichweite '+d.rng:''}</span>`;
@@ -47,7 +47,7 @@ function updUI(force){const S=sides[me];{const sig=tab+(tab==='b'?BORDER:UORDER)
     else{const q=S.uq[U[t].from];count=q.filter(x=>x.type===t).length;if(q[0]&&q[0].type===t)frac=q[0].t/q[0].total}
     if(frac>0&&!ready){if(!pr){pr=document.createElement('div');pr.className='prog';b.appendChild(pr)}pr.style.width=(frac*100)+'%'}else if(pr)pr.remove();
     if(count){if(!cn){cn=document.createElement('div');cn.className='cnt';b.appendChild(cn)}cn.textContent=count}else if(cn)cn.remove();
-    b.classList.toggle('ready',ready);if(ready){if(!rd){rd=document.createElement('div');rd.className='rd';rd.textContent='PLATZIEREN';b.appendChild(rd)}}else if(rd)rd.remove();
+    b.classList.toggle('ready',ready);if(ready){if(!rd){rd=document.createElement('div');rd.className='rd';b.appendChild(rd)}rd.textContent=S.bq.left?'NOCH '+S.bq.left:'PLATZIEREN'}else if(rd)rd.remove();
     if(busy){if(!sh){sh=document.createElement('div');sh.className='shade';b.appendChild(sh)}}else if(sh)sh.remove()}
   if(force||(uiT+=1)%6===0)infoUI()}
 function bupInfo(t){return{ref:'+20 % Öl je Stufe',der:'Laster laden schneller',bar:'bildet 35 % schneller aus',fac:'baut 35 % schneller',tow:'mehr Schaden und Reichweite'}[t]+', +30 % Haltbarkeit'}
@@ -115,7 +115,7 @@ cv.addEventListener('pointermove',e=>{mouse={x:e.offsetX,y:e.offsetY};mouseIn=tr
 cv.addEventListener('pointerup',e=>{ptrs.delete(e.pointerId);if(pinch){if(ptrs.size<2)pinch=null;drag=null;return}if(!drag)return;const d=drag;drag=null;if(d.pan)return;
   const w=toWorld(d.cx,d.cy);
   if(d.box){boxSelect(toWorld(d.sx,d.sy),w);if(boxMode){boxMode=false;updTop()}return}
-  if(placing){const S=sides[me],B0=B[placing];const tx=Math.floor(w.x/T-B0.w/2+.5),ty=Math.floor(w.y/T-B0.h/2+.5);if(S.bq&&S.bq.done&&canPlace(S,placing,tx,ty)){const w=placing==='wall'&&S.money>=B.wall.cost;act(['place',tx,ty]);if(!w)placing=null;updUI(true)}else say('Hier kann nicht gebaut werden','bad',true);return}
+  if(placing){const S=sides[me],B0=B[placing];const tx=Math.floor(w.x/T-B0.w/2+.5),ty=Math.floor(w.y/T-B0.h/2+.5);if(S.bq&&S.bq.done&&canPlace(S,placing,tx,ty)){const w=placing==='wall'&&(S.bq.left||3)>1&&S.money>=B.wall.cost;act(['place',tx,ty]);if(!w)placing=null;updUI(true)}else say('Hier kann nicht gebaut werden','bad',true);return}
   if(supMode){act(['sup',supMode.id,w.x,w.y]);supMode=null;return}
   if(atkMode){command(w.x,w.y,true);atkMode=false;updTop();return}
   const now=performance.now(),e2=entAt(w.x,w.y),dbl=now-lastTap.t<350&&e2&&lastTap.id===e2.id;lastTap={t:now,id:e2?e2.id:0};
@@ -174,7 +174,9 @@ const HELP=`<h2>So wird gespielt</h2><ul>
 <li><b>Tech-Bunker</b> ☢: Schick Fußsoldaten hin – darin wartet eine mächtige Spezialeinheit.</li>
 <li><b>Technologiebaum:</b> Gebäude schalten weitere frei (🔒 zeigt, was fehlt). Beispiel: Panzerwerk + Kraftwerk → Radar → Raketenturm, Flugfeld; Radar + Werkstatt → Labor → Superwaffe.</li>
 <li><b>Strom:</b> Kraftwerke liefern Strom. Bei Strommangel (roter Balken) läuft alles halb so schnell.</li>
-<li><b>Mauern:</b> Mauer wählen, dann beliebig viele Stücke setzen – Rechtsklick beendet.</li>
+<li><b>Mauern:</b> Ein Kauf reicht für bis zu 3 Mauerstücke nacheinander (je 40 $), dann ist die Mauer verbraucht. Rechtsklick beendet vorher.</li>
+<li><b>Superwaffe:</b> Kraftwerk + Panzerwerk → Radar und Werkstatt → Labor → Silo. Das Silo lädt 5 Minuten; dann Silo anklicken, abfeuern und Ziel wählen.</li>
+<li><b>Pause und Spielstand:</b> ⏸ oben links oder Taste <kbd>P</kbd> hält an (online für alle). Im Menü ☰ kannst du Spiele gegen den Computer speichern und laden; zusätzlich wird alle 2 Minuten automatisch gesichert.</li>
 <li><b>Ausbauen:</b> Eigenes Gebäude anklicken → „Auf Stufe 2/3“. Kaserne und Panzerwerk erforschen außerdem Waffen und Panzerung für deine Truppen (wirkt auch auf alle vorhandenen).</li>
 <li><b>Mit anderen spielen:</b> Im Startbild „Mit anderen spielen“ wählen, Raum eröffnen und den Link verschicken. Bis zu 4 Parteien – zusammen gegen den Computer oder jeder gegen jeden. Verlässt jemand das Spiel, übernimmt der Computer.</li>
 <li><b>Hilfe im Spiel:</b> Fahre mit der Maus über einen Bau-Knopf – unten steht, was das Gebäude oder die Einheit kann.</li>
