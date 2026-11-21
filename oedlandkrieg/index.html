@@ -582,18 +582,26 @@ function updUI(force){const S=sides[0];$('money').textContent=Math.floor(S.money
     b.classList.toggle('ready',ready);if(ready){if(!rd){rd=document.createElement('div');rd.className='rd';rd.textContent='PLATZIEREN';b.appendChild(rd)}}else if(rd)rd.remove();
     if(busy){if(!sh){sh=document.createElement('div');sh.className='shade';b.appendChild(sh)}}else if(sh)sh.remove()}
   if(force||(uiT+=1)%6===0)infoUI()}
+function setInfo(h){const box=$('info');if(box._h!==h){box._h=h;box.innerHTML=h}}
+function sellBld(e){const S=sides[0];if(!e||e.dead||e.side!==0||e.k!=='b'||e.type==='hq')return;const v=Math.floor(B[e.type].cost*.5*e.hp/e.max);
+  for(let y=e.ty;y<e.ty+e.h;y++)for(let x=e.tx;x<e.tx+e.w;x++)if(occ[y*MW+x]===e.id)occ[y*MW+x]=0;
+  e.dead=true;e.hp=0;S.money+=v;for(const o of ents)if(o.der===e)o.der=null;
+  for(let i=0;i<e.w*e.h*3;i++)parts.push({x:e.x+(rnd()-.5)*e.w*T,y:e.y+(rnd()-.5)*e.h*T,vx:(rnd()-.5)*10,vy:-8-rnd()*10,l:1.2+rnd(),m:2,t:'smoke',r:6});
+  decalRubble(e);sfx('place',e.x,e.y);floatTxt(e.x,e.y-20,'+'+v,'#ffcf5a');sel=sel.filter(o=>o!==e);say(`${FAC[S.fac].b[e.type]} verkauft (+${v} $)`,'',true);infoUI();updUI(true)}
+function upgradeHQ(){const S=sides[0];if(S.money>=1200&&!S.upg&&S.lvl<2){S.money-=1200;S.upg={t:0,total:30};say('Ausbau der Zentrale gestartet','',true);infoUI()}}
+$('info').addEventListener('pointerdown',ev=>{const b=ev.target.closest('button');if(!b||b.disabled)return;ev.preventDefault();sfx('click');
+  if(b.id==='iSell'){const e=sel.find(x=>!x.dead&&x.id===+b.dataset.id);sellBld(e)}else if(b.id==='iUp')upgradeHQ()});
 function infoUI(){const S=sides[0],box=$('info');const s=sel.filter(e=>!e.dead);
-  if(!s.length){box.innerHTML=`<b>${FAC[S.fac].name}</b><br>Einheiten: ${units(0).length} · Gebäude: ${own(0).length}<br><span style="color:#b9a27e">Gegner: ${DIFF[cfg.diff].name}</span>`;return}
+  if(!s.length){setInfo(`<b>${FAC[S.fac].name}</b><br>Einheiten: ${units(0).length} · Gebäude: ${own(0).length}<br><span style="color:#b9a27e">Gegner: ${DIFF[cfg.diff].name}</span>`);return}
   if(s.length===1){const e=s[0];const nm=e.k==='b'?(e.side>=0?FAC[sides[e.side].fac].b[e.type]:'Tech-Bunker'):FAC[sides[e.side].fac].u[e.type];
     let h=`<b>${nm}</b>${e.k==='u'&&e.vet?' <span style="color:#ffd84a">'+'★'.repeat(e.vet)+'</span>':''}<div class="hpb"><i style="width:${e.hp/e.max*100}%"></i></div>${Math.ceil(e.hp)} / ${Math.ceil(e.max)}`;
     if(e.k==='u'&&e.type==='oil')h+=`<br>Ladung: ${e.load} Öl`;if(e.k==='b'&&e.type==='der')h+=`<br>Ölvorrat: ${Math.max(0,e.oil)}`;
     if(e.k==='u'&&e.kills)h+=`<br>Abschüsse: ${e.kills}`;
     if(e.side===0&&e.type==='hq')h+=S.lvl>1?'<br>✔ Ausgebaut':S.upg?`<br>Ausbau läuft … ${Math.floor(S.upg.t/S.upg.total*100)} %`:`<button class="sbtn" id="iUp" ${S.money<1200?'disabled':''}>⬆ Ausbau (1200 $)</button>`;
     if(e.side===0&&(e.type==='bar'||e.type==='fac'))h+='<br><span style="color:#b9a27e">Rechtsklick auf die Karte setzt den Sammelpunkt</span>';
-    if(e.side===0&&e.k==='b'&&e.type!=='hq')h+=`<button class="sbtn" id="iSell">♻ Verkaufen (+${Math.floor(B[e.type].cost*.5*e.hp/e.max)} $)</button>`;
-    box.innerHTML=h;const up=$('iUp');if(up)up.onclick=()=>{if(S.money>=1200&&!S.upg&&S.lvl<2){S.money-=1200;S.upg={t:0,total:30};infoUI()}};
-    const sl=$('iSell');if(sl)sl.onclick=()=>{const v=Math.floor(B[e.type].cost*.5*e.hp/e.max);S.money+=v;e.hp=0;kill(e,null);sel=[];infoUI()};return}
-  const cnt={};for(const e of s)cnt[e.type]=(cnt[e.type]||0)+1;box.innerHTML=`<b>${s.length} ausgewählt</b><br>`+Object.entries(cnt).map(([t,n])=>`${n}× ${FAC[S.fac].u[t]||t}`).join('<br>')}
+    if(e.side===0&&e.k==='b'&&e.type!=='hq')h+=`<button class="sbtn" id="iSell" data-id="${e.id}">♻ Verkaufen (+${Math.floor(B[e.type].cost*.5*e.hp/e.max)} $)</button>`;
+    setInfo(h);return}
+  const cnt={};for(const e of s)cnt[e.type]=(cnt[e.type]||0)+1;setInfo(`<b>${s.length} ausgewählt</b><br>`+Object.entries(cnt).map(([t,n])=>`${n}× ${FAC[S.fac].u[t]||t}`).join('<br>'))}
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));tab=t.dataset.t;buildUI()});
 
 /* ======================= Eingabe ======================= */
