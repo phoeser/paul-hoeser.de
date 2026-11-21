@@ -98,11 +98,14 @@ table.st{width:100%;border-collapse:collapse;margin:8px 0}table.st td{padding:4p
     <button class="opt fac on" data-v="bunker"><canvas width="240" height="90"></canvas>Bunkerleute<small>Stahl, Ketten und Kanonen – die Überlebenden aus den Atombunkern</small></button>
     <button class="opt fac" data-v="mutant"><canvas width="240" height="90"></canvas>Mutanten<small>Schrott, Wut und Kampfbestien – die Kinder der Strahlung</small></button>
   </div>
-  <div class="lbl">Gegner</div>
+  <div class="lbl">Stärke der Gegner</div>
   <div class="seg" id="segD"><button class="opt" data-v="easy">Leicht<small>zum Reinkommen</small></button><button class="opt on" data-v="normal">Normal<small>fairer Kampf</small></button><button class="opt" data-v="hard">Schwer<small>greift früh an</small></button><button class="opt" data-v="brutal">Brutal<small>mehr Öl, mehr Wut</small></button></div>
+  <div class="lbl">Anzahl Gegner</div>
+  <div class="seg" id="segP"><button class="opt on" data-v="2">1 Gegner</button><button class="opt" data-v="3">2 Gegner<small>jeder gegen jeden</small></button><button class="opt" data-v="4">3 Gegner<small>jeder gegen jeden</small></button></div>
   <div class="lbl">Karte</div>
   <div class="seg" id="segM"><button class="opt" data-v="48">Klein</button><button class="opt on" data-v="64">Mittel</button><button class="opt" data-v="84">Groß</button></div>
   <button class="big" id="bStart">⚔ Gefecht starten</button>
+  <button class="big sec" id="bOnline">🌐 Mit anderen spielen (bis zu 4)</button>
   <button class="big sec" id="bCamp" disabled>🎖 Kampagne – kommt in der nächsten Ausbaustufe</button>
   <button class="big sec" id="bHelp">📜 So wird gespielt</button>
 </div></div>
@@ -111,5 +114,6 @@ table.st{width:100%;border-collapse:collapse;margin:8px 0}table.st td{padding:4p
 <script src="js/core.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/net.js"></script>
 </body>
 </html>
