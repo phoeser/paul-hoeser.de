@@ -204,10 +204,10 @@ function canPlace(S,type,tx,ty){const d=B[type];if(tx<1||ty<1||tx+d.w>MW-1||ty+d
   for(let y=ty;y<ty+d.h;y++)for(let x=tx;x<tx+d.w;x++){const t=tiles[y*MW+x];if(t===1||occ[y*MW+x])return false;if(type==='der'?t!==2:type==='scr'?t!==3:t>=2)return false}
   if(type==='der'||type==='scr')return S.id!==me||expl[ty*MW+tx]||cfg.reveal;
   for(const b of own(S.id))if(tx<=b.tx+b.w+6&&tx+d.w>=b.tx-6&&ty<=b.ty+b.h+6&&ty+d.h>=b.ty-6)return true;return false}
-function place(S,tx,ty){const type=S.bq.type;if(!canPlace(S,type,tx,ty))return false;const b=addBld(S.id,type,tx,ty);S.bq=null;S.stats.built++;
+function place(S,tx,ty){const type=S.bq.type,left=type==='wall'?(S.bq.left||3)-1:0;if(!canPlace(S,type,tx,ty))return false;const b=addBld(S.id,type,tx,ty);S.bq=null;S.stats.built++;
   if(type==='ref'||type==='der'){const d=dock(b);const f=nearestFree(d.x,d.y,5);if(f){const u=addUnit(S.id,'oil',f.x*T+16,f.y*T+16);if(type==='der')u.der=b}}
   if(type==='scr')b.scrap=7000;
-  if(type==='wall'&&S.human&&S.money>=B.wall.cost){S.money-=B.wall.cost;S.bq={type:'wall',t:0,total:0,done:true}}
+  if(left>0&&S.human&&S.money>=B.wall.cost){S.money-=B.wall.cost;S.bq={type:'wall',t:0,total:0,done:true,left}}
   sfx('place',b.x,b.y);return true}
 
 /* ======================= Computer-Gegner ======================= */
