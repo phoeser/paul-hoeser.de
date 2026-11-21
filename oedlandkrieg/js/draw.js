@@ -53,7 +53,7 @@ function shade(hex,f){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b
 function render(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#000';ctx.fillRect(0,0,CW,CH);
   const shx=shake>0?(rnd()-.5)*shake*14:0,shy=shake>0?(rnd()-.5)*shake*14:0;ctx.setTransform(DPR*zoom,0,0,DPR*zoom,(-camX+shx)*DPR*zoom,(-camY+shy)*DPR*zoom);ctx.imageSmoothingEnabled=true;
   const vw=viewW(),vh=viewH();ctx.drawImage(terrainC,camX,camY,vw,vh,camX,camY,vw,vh);ctx.drawImage(decalC,camX,camY,vw,vh,camX,camY,vw,vh);
-  const list=ents.filter(e=>!e.dead&&onScreen(e.x,e.y,e.k==='b'?120:40)&&(e.side!==1||isVisTo(0,e))).sort((a,b)=>(a.k==='b'?a.y-6:a.y)-(b.k==='b'?b.y-6:b.y));
+  const list=ents.filter(e=>!e.dead&&onScreen(e.x,e.y,e.k==='b'?120:40)&&(!hostile(e.side,me)||isVisTo(me,e))).sort((a,b)=>(a.k==='b'?a.y-6:a.y)-(b.k==='b'?b.y-6:b.y));
   for(const e of list){if(e.k==='b')drawBld(e);}
   // Auswahl-Ringe unter Einheiten
   for(const e of sel)if(e.k==='u'&&!e.dead){ctx.beginPath();ctx.ellipse(e.x,e.y+2,e.s.r+4,(e.s.r+4)*.65,0,0,7);ctx.strokeStyle='rgba(0,0,0,.5)';ctx.lineWidth=3.5;ctx.stroke();ctx.strokeStyle='#7aff6a';ctx.lineWidth=1.6;ctx.stroke();ctx.fillStyle='rgba(122,255,106,.08)';ctx.fill()}
@@ -77,8 +77,8 @@ function render(){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#000';ctx.fil
   // Bewegungsziel-Marker
   for(const m of marks){ctx.strokeStyle=m.c;ctx.globalAlpha=m.l;ctx.lineWidth=2;ctx.beginPath();ctx.arc(m.x,m.y,(1-m.l)*14+4,0,7);ctx.stroke()}ctx.globalAlpha=1;
   // Platzieren
-  if(placing&&hover){const d=B[placing];const tx=Math.floor(hover.x/T-d.w/2+.5),ty=Math.floor(hover.y/T-d.h/2+.5);const ok=canPlace(sides[0],placing,tx,ty);
-    ctx.globalAlpha=.55;drawBld({type:placing,side:0,tx,ty,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:1,max:1,anim:time,tdir:1.5,ghost:true});ctx.globalAlpha=1;
+  if(placing&&hover){const d=B[placing];const tx=Math.floor(hover.x/T-d.w/2+.5),ty=Math.floor(hover.y/T-d.h/2+.5);const ok=canPlace(sides[me],placing,tx,ty);
+    ctx.globalAlpha=.55;drawBld({type:placing,side:me,tx,ty,w:d.w,h:d.h,x:(tx+d.w/2)*T,y:(ty+d.h/2)*T,hp:1,max:1,anim:time,tdir:1.5,ghost:true});ctx.globalAlpha=1;
     ctx.fillStyle=ok?'rgba(80,255,80,.25)':'rgba(255,60,40,.35)';ctx.fillRect(tx*T,ty*T,d.w*T,d.h*T);ctx.strokeStyle=ok?'#6f6':'#f44';ctx.strokeRect(tx*T,ty*T,d.w*T,d.h*T);if(d.rng){ctx.setLineDash([8,6]);ctx.beginPath();ctx.arc((tx+d.w/2)*T,(ty+d.h/2)*T,d.rng*T,0,7);ctx.stroke();ctx.setLineDash([])}}
   ctx.setTransform(DPR,0,0,DPR,0,0);drawMood();
   if(drag&&drag.box){ctx.strokeStyle='#7aff6a';ctx.lineWidth=1;ctx.fillStyle='rgba(120,255,100,.08)';const x=Math.min(drag.sx,drag.cx),y=Math.min(drag.sy,drag.cy),w=Math.abs(drag.cx-drag.sx),h=Math.abs(drag.cy-drag.sy);ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h)}
@@ -242,12 +242,12 @@ function drawBld(b){const c=DC,col=b.side>=0?COL[b.side]:'#888',x0=b.tx*T,y0=b.t
   if(b.up){c.strokeStyle='#ffcf5a';c.lineWidth=2;c.setLineDash([4,4]);c.lineDashOffset=-a*20;c.strokeRect(2,2,w-4,h-4);c.setLineDash([])}
   c.restore()}
 function drawMini(){const W=mini.width,s=W/MW;mctx.imageSmoothingEnabled=false;mctx.drawImage(miniBase,0,0,W,W);
-  const radar=own(0,'rad').length&&!(sides[0].pw&&sides[0].pw.low);for(const e of ents){if(e.dead)continue;if(e.side===1&&!isVisTo(0,e)&&!(radar&&e.k==='u'))continue;mctx.fillStyle=e.side<0?(e.opened?'#666':'#7ae8ff'):COL[e.side];
+  const radar=own(me,'rad').length&&!(sides[me].pw&&sides[me].pw.low);for(const e of ents){if(e.dead)continue;if(hostile(e.side,me)&&!isVisTo(me,e)&&!(radar&&e.k==='u'))continue;mctx.fillStyle=e.side<0?(e.opened?'#666':'#7ae8ff'):COL[e.side];
     if(e.k==='b')mctx.fillRect(e.tx*s,e.ty*s,e.w*s,e.h*s);else mctx.fillRect(e.x/T*s-1,e.y/T*s-1,2.5,2.5)}
   if(!cfg.reveal){mctx.fillStyle='rgba(0,0,0,1)';for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=y*MW+x;if(!expl[i]){mctx.globalAlpha=1;mctx.fillRect(x*s,y*s,s+.5,s+.5)}else if(!vis[i]){mctx.globalAlpha=.4;mctx.fillRect(x*s,y*s,s+.5,s+.5)}}mctx.globalAlpha=1}
-  const al=sides[0].alarm;if(al&&time-al.t<5&&Math.sin(time*10)>0){mctx.strokeStyle='#ff3a2a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(al.x/T*s,al.y/T*s,8,0,7);mctx.stroke()}
+  const al=sides[me].alarm;if(al&&time-al.t<5&&Math.sin(time*10)>0){mctx.strokeStyle='#ff3a2a';mctx.lineWidth=2;mctx.beginPath();mctx.arc(al.x/T*s,al.y/T*s,8,0,7);mctx.stroke()}
   mctx.strokeStyle='#fff';mctx.lineWidth=1;mctx.strokeRect(camX/T*s,camY/T*s,viewW()/T*s,viewH()/T*s)}
-function computeVis(){vis.fill(0);for(const e of ents){if(e.dead||e.side!==0)continue;const r=(e.k==='b'?B[e.type].sight:e.s.sight)+(e.k==='b'?Math.max(e.w,e.h)/2:0);const cx=e.x/T,cy=e.y/T,r2=r*r;
+function computeVis(){vis.fill(0);for(const e of ents){if(e.dead||e.side<0||hostile(e.side,me))continue;const r=(e.k==='b'?B[e.type].sight:e.s.sight)+(e.k==='b'?Math.max(e.w,e.h)/2:0);const cx=e.x/T,cy=e.y/T,r2=r*r;
   for(let y=Math.max(0,(cy-r)|0);y<=Math.min(MH-1,(cy+r)|0);y++)for(let x=Math.max(0,(cx-r)|0);x<=Math.min(MW-1,(cx+r)|0);x++){const dx=x+.5-cx,dy=y+.5-cy;if(dx*dx+dy*dy<=r2){vis[y*MW+x]=1;expl[y*MW+x]=1}}}updFog()}
 // Zusätze für die Grafik: Druckwelle bei Explosionen, Zeitpunkt des letzten Schusses
 {const b0=boom;boom=function(x,y,s,big,small){b0(x,y,s,big,small);if(!small)parts.push({x,y,vx:0,vy:0,l:.45,m:.45,t:'ring',r:s*2.4})};const f0=fire;fire=function(a,t){f0(a,t);a.fT=time}}
