@@ -33,7 +33,7 @@ const B={
  fac:{w:3,h:3,hp:1200,cost:1000,time:18,sight:5,req:['ref'],pw:40},
  sil:{w:2,h:2,hp:600,cost:500,time:9,sight:4,req:['ref'],pw:10},
  scr:{w:2,h:2,hp:700,cost:700,time:12,sight:4,req:['ref'],pw:20},
- rep:{w:2,h:2,hp:900,cost:600,time:12,sight:5,req:['fac'],pw:30},
+ rep:{w:2,h:2,hp:900,cost:600,time:12,sight:5,req:['fac'],pw:30,rng:9},
  ctow:{w:2,h:2,hp:1600,cost:800,time:14,sight:8,req:['fac'],rng:7,dmg:60,wpn:'cannon',cd:2.2,pw:25},
  rad:{w:2,h:2,hp:800,cost:700,time:14,sight:12,req:['fac','pow'],pw:40},
  rtow:{w:1,h:1,hp:900,cost:650,time:12,sight:9,req:['rad'],rng:8,dmg:38,wpn:'rocket',cd:1.8,pw:30},
@@ -73,4 +73,9 @@ const power=S=>{let p=0,u=0;for(const b of ents)if(!b.dead&&b.k==='b'&&b.side===
 const pf=S=>S.pw&&S.pw.low?.5:1;
 const blocked=(x,y)=>x<0||y<0||x>=MW||y>=MH||tiles[y*MW+x]===1||occ[y*MW+x]>0;
 // Beschreibung für später hinzugekommene Einheiten (die Texte stehen sonst in ui.js)
-addEventListener('load',()=>{if(typeof DESC==='undefined')return;DESC.trans='Fliegt bis zu 8 Fußtruppen aller Art über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit Taste U. Unbewaffnet.';DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.'});
+addEventListener('load',()=>{if(typeof DESC==='undefined')return;DESC.trans='Fliegt bis zu 8 Fußtruppen aller Art über Felsen und Mauern. Truppen wählen, Rechtsklick auf den Transporter; absetzen im Info-Feld oder mit Taste U. Unbewaffnet.';DESC.jet='Sehr schnelles Flugzeug mit starken Raketen gegen Boden- und Luftziele. Nur Raketen, MG und Laser treffen es.';DESC.rep='Repariert eigene Fahrzeuge und Gebäude im großen gestrichelten Kreis (9 Felder, mit jeder Ausbaustufe etwas mehr). Der Kreis erscheint beim Platzieren und wenn die Werkstatt angewählt ist.'});
+// Werkstatt: großer Reparatur-Radius. B.rep.rng wird beim Platzieren und Anwählen als Kreis gezeigt. core.js repariert nur den inneren Bereich, hier kommt der äußere Ring dazu.
+addEventListener('load',()=>{if(typeof updBld!=='function')return;const ub=updBld;updBld=function(b,dt){ub(b,dt);if(b.type!=='rep'||b.side<0||b.dead)return;const S=sides[b.side],PF=pf(S),R=(B.rep.rng+(b.lvl-1)*.75)*T;
+  for(const e of ents){if(e.dead||e.side!==b.side||e===b||e.hp>=e.max)continue;const d=dist(e.x,e.y,b.x,b.y);if(d>=R)continue;
+    if(e.k==='u'){if(d>=4.5*T&&(!organic(e)||S.fac==='mutant')){e.hp=Math.min(e.max,e.hp+14*dt*PF*b.lvl);if(rnd()<dt*2)parts.push({x:e.x,y:e.y-6,vx:0,vy:-14,l:.8,m:.8,t:'spark',r:2})}}
+    else if(d>=6.5*T&&e.type!=='tech'){e.hp=Math.min(e.max,e.hp+5*dt*PF*b.lvl);if(rnd()<dt)parts.push({x:e.x+(rnd()-.5)*e.w*T*.6,y:e.y+(rnd()-.5)*e.h*T*.6,vx:0,vy:-10,l:.7,m:.7,t:'spark',r:2})}}}});
